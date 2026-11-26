@@ -224,6 +224,24 @@ function placeSheet(screen){
 }
 function updateGameTab(){ $("gameTab").textContent = gameOpen() ? "🎮 Game" : "🎮 Game 🔒"; }
 
+/* ============ version: show when the app was last updated, and pick up a new version automatically ============ */
+const APP_META = document.querySelector('meta[name="app-version"]'), APP_V = APP_META ? APP_META.content : "";
+function showUpdated(){
+  const iso = APP_META && APP_META.dataset.updated; if (!iso) return;
+  const d = new Date(iso);
+  $("updatedTxt").textContent = "App last updated: " + d.toLocaleString(undefined, { day:"numeric", month:"short", year:"numeric", hour:"numeric", minute:"2-digit" });
+}
+async function checkForUpdate(){
+  try {
+    const r = await fetch("version.json?t=" + Date.now(), { cache:"no-store" }); if (!r.ok) return;
+    const j = await r.json(); if (!j.v || !APP_V || j.v <= APP_V) return;
+    if (new URLSearchParams(location.search).get("v") === j.v) return;        // already asked for this version: don't loop
+    location.replace(location.pathname + "?v=" + j.v + location.hash);       // a new address, so the browser can't use its cached copy
+  } catch (e) {}
+}
+showUpdated(); checkForUpdate();
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") checkForUpdate(); });
+
 /* ============ library ============ */
 let library = [], myPieces = [];
 const GRADE_NAMES = { 0:"Warm-ups", 1:"Grade 1 level", 2:"Grade 2 level", 3:"Grade 3 level", 4:"Grade 4 level", 5:"Grade 5+ (challenge)", 99:"My pieces" };
