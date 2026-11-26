@@ -200,7 +200,8 @@ function show(screen){
   document.querySelectorAll(".screen").forEach(s => s.classList.toggle("active", s.id === "screen-" + screen));
   ui.screen = screen; updateGameTab(); closeModal();
   $("kbCard").classList.toggle("hidden", !["practice","game"].includes(screen));
-  if (screen !== "game") $("gameCanvas").classList.add("hidden");   // the falling-notes area belongs to the Game only (prepareGame shows it again)
+  if (screen !== "game") $("gameCanvas").classList.add("hidden");
+  placeSheet(screen);   // the falling-notes area belongs to the Game only (prepareGame shows it again)
   if (screen === "library") { renderLibrary(); renderRecordings(); }
   if (screen === "stickers") renderStickers();
   if (screen === "parent") renderParent();
@@ -209,6 +210,13 @@ function show(screen){
   wakeLock(screen !== "library"); window.scrollTo(0, 0); setTimeout(fitLayout, 0); setTimeout(fitLayout, 400);
 }
 document.querySelectorAll("#tabs button[data-screen]").forEach(b => b.onclick = () => show(b.dataset.screen));
+/* There is one sheet-music view. In the Game it moves above the falling notes as a short strip (a line or so of music)
+   with the blue cursor following the game, so the player can see which part of the piece they're in. */
+function placeSheet(screen){
+  const sc = $("sheetCard");
+  if (screen === "game") { if (sc.parentElement !== $("screen-game")) $("gameCard").after(sc); sc.classList.add("mini"); }
+  else { if (sc.nextElementSibling !== $("rollWrap")) $("rollWrap").before(sc); sc.classList.remove("mini", "offgame"); }
+}
 function updateGameTab(){ $("gameTab").textContent = gameOpen() ? "🎮 Game" : "🎮 Game 🔒"; }
 
 /* ============ library ============ */
@@ -439,8 +447,16 @@ function scrollToCursor(){
     }
     const target = Math.max(0, Math.round(top0 - 12 + shift));
     if (Math.abs(target - lastScrollTarget) < 4 && Math.abs(box.scrollTop - target) < 4) return;
-    lastScrollTarget = target; box.scrollTo({ top:target, behavior:"smooth" });
+    lastScrollTarget = target; glide(box, target);
   } catch (e) {}
+}
+/* a short eased scroll (our own, so it behaves the same in every browser) */
+function glide(box, target){
+  cancelAnimationFrame(box._glide); const from = box.scrollTop, d = target - from, t0 = performance.now(), T = 300;
+  if (Math.abs(d) < 2) return;
+  const step = () => { const k = Math.min(1, (performance.now() - t0) / T), e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+    box.scrollTop = from + d * e; if (k < 1) box._glide = requestAnimationFrame(step); };
+  box._glide = requestAnimationFrame(step);
 }
 const expected = (i, hand) => piece.steps[i].notes.filter(n => hand === "both" || n.hand === hand);
 function rangeIdx(){
@@ -626,27 +642,34 @@ let G = null, raf = 0;
 async function prepareGame(){
   const open = gameOpen();
   $("lockCard").classList.toggle("hidden", open); $("gameCard").classList.toggle("hidden", !open); $("gameCanvas").classList.toggle("hidden", !open);
+  $("sheetCard").classList.toggle("offgame", !open);
   const meta = findPiece(store.current) || allPieces()[0]; if (!meta) return;
   if (!piece || piece.meta.id !== meta.id) { try { await loadPiece(meta); } catch (e) { return; } $("barFrom").value = 1; $("barTo").value = piece.bars; }
   buildKeyboard(piece.lo, piece.hi); showTargets(new Map()); setHandSeg();
   $("gameTitle").textContent = meta.title;
   document.querySelectorAll("#speedSeg button").forEach(b => b.classList.toggle("active", b.dataset.speed === store.speed));
   $("hudScore").textContent = "0"; $("hudCombo").textContent = "0"; $("hudMsg").textContent = "";
-  fitLayout(); if (open) drawGame(0);
+  $("sheetCard").classList.toggle("offgame", !open || piece.kind !== "xml");
+  fitLayout(); if (open) { drawGame(0); moveCursor(gameRange()[0]); }
 }
 document.querySelectorAll("#speedSeg button").forEach(b => b.onclick = () => { if (G && G.running) return; store.speed = b.dataset.speed; save(); prepareGame(); });
 $("startGameBtn").onclick = () => { if (G && G.running) { stopGame(); prepareGame(); return; } startGame(); };
+function gameRange(){
+  const from = Math.max(1, +$("barFrom").value || 1), to = Math.max(from, +$("barTo").value || piece.bars);
+  let a = piece.steps.findIndex(x => x.bar >= from); if (a < 0) a = 0; let b = piece.steps.length - 1; while (b > a && piece.steps[b].bar > to) b--; return [a, b];
+}
 function startGame(){
   const spq = 60 / (piece.bpm * SPEED[store.speed]);
-  const [s, e] = (() => { const from = Math.max(1, +$("barFrom").value || 1), to = Math.max(from, +$("barTo").value || piece.bars);
-    let a = piece.steps.findIndex(x => x.bar >= from); if (a < 0) a = 0; let b = piece.steps.length - 1; while (b > a && piece.steps[b].bar > to) b--; return [a, b]; })();
+  const [s, e] = gameRange();
   const now = performance.now() / 1000, lead = 3, base = piece.steps[s].t, notes = [], auto = [];
   for (let i = s; i <= e; i++) for (const n of piece.steps[i].notes) {
     const o = { midi:n.midi, hand:n.hand, t:now + lead + (piece.steps[i].t - base) * spq, len:n.dur * spq, hit:false, miss:false };
     (store.hand === "both" || n.hand === store.hand ? notes : auto).push(o);
   }
   const end = Math.max(...notes.concat(auto).map(n => n.t + n.len)) + 1;
-  G = { notes, auto, start:now, end, running:true, score:0, combo:0, best:0, hits:0, msgT:0, lanes:laneMap($("gameCanvas")) };
+  G = { notes, auto, start:now, end, running:true, score:0, combo:0, best:0, hits:0, msgT:0, lanes:laneMap($("gameCanvas")),
+        si:s, se:e, stepT:i => now + lead + (piece.steps[i].t - base) * spq };
+  moveCursor(s);
   $("startGameBtn").textContent = "■ Stop"; cancelAnimationFrame(raf); raf = requestAnimationFrame(loop);
 }
 function stopGame(){ cancelAnimationFrame(raf); if (G && G.running) { G.running = false; allNotesOff(); } $("startGameBtn").textContent = "▶ Start"; showTargets(new Map()); }
@@ -666,6 +689,7 @@ function loop(){
   if (G.msgT && performance.now() - G.msgT > 1200) { $("hudMsg").textContent = ""; G.msgT = 0; }
   const soon = new Map(); for (const n of G.notes) if (!n.hit && !n.miss && n.t - now < 0.5 && n.t - now > -0.25) soon.set(n.midi, n.hand);
   showTargets(soon);
+  if (piece.kind === "xml") { let i = G.si; while (i < G.se && G.stepT(i + 1) <= now + 0.05) i++; if (i !== G.si) { G.si = i; moveCursor(i); } }
   drawGame(now);
   if (now > G.end) return finishGame();
   raf = requestAnimationFrame(loop);
@@ -724,7 +748,11 @@ $("soundBtn").onclick = () => { store.sound = store.sound === false ? null : fal
 function fitLayout(){
   const kb = ($("kb").offsetHeight || 150) + 26, avail = window.innerHeight - kb - 14;
   for (const id of ["sheetCard","rollCanvas","gameCanvas"]) { const el = $(id); const top = el.getBoundingClientRect().top + window.scrollY;
-    if (!el.offsetParent) continue; el.style.height = Math.max(160, avail - top - (id === "gameCanvas" ? 0 : 10)) + "px"; }
+    if (!el.offsetParent) continue;
+    if (id === "sheetCard" && ui.screen === "game") {   // about one line of music; the falling notes get the rest
+      const c = osmd && osmd.cursor && osmd.cursor.cursorElement, lineH = (c && c.getBoundingClientRect().height) || 150;
+      el.style.height = Math.round(Math.max(110, Math.min(lineH + 28, avail - top - 170))) + "px"; continue; }   // keep >=170px for falling notes
+    el.style.height = Math.max(160, avail - top - (id === "gameCanvas" ? 0 : 10)) + "px"; }
   if (ui.screen === "practice" && piece && piece.kind === "midi") drawRoll();
 }
 window.addEventListener("resize", () => setTimeout(fitLayout, 50));

@@ -167,3 +167,5 @@ ol.gs li span:nth-child(2){flex:1}
 #metroBtn.tick1{box-shadow:0 0 0 5px rgba(255,95,162,.65)}
 .metropanel .row{gap:6px}.metropanel .mhead{margin:0}
 #metroPanel [data-pct],#mTap{flex:1}
+.sheetcard.mini{margin-bottom:8px}
+.sheetcard.mini.offgame{display:none}
