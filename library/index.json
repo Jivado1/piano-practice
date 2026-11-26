@@ -1,0 +1,272 @@
+[
+ {
+  "id": "warmup-hot-cross-buns",
+  "title": "Hot Cross Buns",
+  "composer": "",
+  "grade": 0,
+  "bpm": 90,
+  "file": "library/warmup-hot-cross-buns.musicxml",
+  "hand": "R",
+  "licence": "Public Domain",
+  "source": "Arranged for this app"
+ },
+ {
+  "id": "warmup-mary-lamb",
+  "title": "Mary Had a Little Lamb",
+  "composer": "",
+  "grade": 0,
+  "bpm": 100,
+  "file": "library/warmup-mary-lamb.musicxml",
+  "hand": "R",
+  "licence": "Public Domain",
+  "source": "Arranged for this app"
+ },
+ {
+  "id": "warmup-ode-to-joy",
+  "title": "Ode to Joy",
+  "composer": "",
+  "grade": 0,
+  "bpm": 100,
+  "file": "library/warmup-ode-to-joy.musicxml",
+  "hand": "R",
+  "licence": "Public Domain",
+  "source": "Arranged for this app"
+ },
+ {
+  "id": "warmup-jingle-bells",
+  "title": "Jingle Bells",
+  "composer": "",
+  "grade": 0,
+  "bpm": 110,
+  "file": "library/warmup-jingle-bells.musicxml",
+  "hand": "R",
+  "licence": "Public Domain",
+  "source": "Arranged for this app"
+ },
+ {
+  "id": "warmup-twinkle",
+  "title": "Twinkle Twinkle Little Star",
+  "composer": "",
+  "grade": 0,
+  "bpm": 100,
+  "file": "library/warmup-twinkle.musicxml",
+  "hand": "R",
+  "licence": "Public Domain",
+  "source": "Arranged for this app"
+ },
+ {
+  "id": "warmup-london-bridge",
+  "title": "London Bridge",
+  "composer": "",
+  "grade": 0,
+  "bpm": 110,
+  "file": "library/warmup-london-bridge.musicxml",
+  "hand": "R",
+  "licence": "Public Domain",
+  "source": "Arranged for this app"
+ },
+ {
+  "id": "warmup-frere-jacques",
+  "title": "Frère Jacques (left hand)",
+  "composer": "",
+  "grade": 0,
+  "bpm": 100,
+  "file": "library/warmup-frere-jacques.musicxml",
+  "hand": "L",
+  "licence": "Public Domain",
+  "source": "Arranged for this app"
+ },
+ {
+  "id": "warmup-saints",
+  "title": "When the Saints Go Marching In",
+  "composer": "",
+  "grade": 0,
+  "bpm": 110,
+  "file": "library/warmup-saints.musicxml",
+  "hand": "R",
+  "licence": "Public Domain",
+  "source": "Arranged for this app"
+ },
+ {
+  "id": "warmup-minuet-melody",
+  "title": "Minuet in G (melody only)",
+  "composer": "",
+  "grade": 0,
+  "bpm": 100,
+  "file": "library/warmup-minuet-melody.musicxml",
+  "hand": "R",
+  "licence": "Public Domain",
+  "source": "Arranged for this app"
+ },
+ {
+  "id": "warmup-fur-elise",
+  "title": "Für Elise (opening, right hand)",
+  "composer": "",
+  "grade": 0,
+  "bpm": 60,
+  "file": "library/warmup-fur-elise.musicxml",
+  "hand": "R",
+  "licence": "Public Domain",
+  "source": "Arranged for this app"
+ },
+ {
+  "id": "bach-minuet-g",
+  "title": "Minuet in G, BWV Anh. 114",
+  "composer": "Christian Petzold (attr. J.S. Bach)",
+  "grade": 1,
+  "bpm": 100,
+  "source": "Mutopia Project, typeset by Allen Garvin",
+  "licence": "Public Domain",
+  "file": "library/bach-minuet-g.musicxml"
+ },
+ {
+  "id": "bach-minuet-gminor",
+  "title": "Minuet in G minor, BWV Anh. 115",
+  "composer": "Christian Petzold (attr. J.S. Bach)",
+  "grade": 2,
+  "bpm": 96,
+  "source": "Mutopia Project, typeset by Allen Garvin",
+  "licence": "Public Domain",
+  "file": "library/bach-minuet-gminor.musicxml"
+ },
+ {
+  "id": "bach-musette-d",
+  "title": "Musette in D, BWV Anh. 126",
+  "composer": "Anon. (Anna Magdalena Notebook)",
+  "grade": 3,
+  "bpm": 100,
+  "source": "Mutopia Project, typeset by Allen Garvin",
+  "licence": "Public Domain",
+  "file": "library/bach-musette-d.musicxml"
+ },
+ {
+  "id": "mozart-minuet-k2",
+  "title": "Minuet in F, K. 2",
+  "composer": "W.A. Mozart",
+  "grade": 2,
+  "bpm": 108,
+  "source": "Mutopia Project, typeset by Nicolas Morant",
+  "licence": "Public Domain",
+  "file": "library/mozart-minuet-k2.musicxml"
+ },
+ {
+  "id": "schumann-melody",
+  "title": "Melody, Op. 68 No. 1",
+  "composer": "Robert Schumann",
+  "grade": 2,
+  "bpm": 80,
+  "source": "Mutopia Project, typeset by Philippe Hézaine",
+  "licence": "Creative Commons Attribution-ShareAlike 2.5",
+  "file": "library/schumann-melody.musicxml"
+ },
+ {
+  "id": "schumann-humming",
+  "title": "Humming Song, Op. 68 No. 3",
+  "composer": "Robert Schumann",
+  "grade": 2,
+  "bpm": 72,
+  "source": "Mutopia Project, typeset by Philippe Hézaine",
+  "licence": "Creative Commons Attribution-ShareAlike 3.0",
+  "file": "library/schumann-humming.musicxml"
+ },
+ {
+  "id": "schumann-soldiers",
+  "title": "Soldiers' March, Op. 68 No. 2",
+  "composer": "Robert Schumann",
+  "grade": 3,
+  "bpm": 104,
+  "source": "Mutopia Project, typeset by Philippe Hézaine",
+  "licence": "Creative Commons Attribution-ShareAlike 2.5",
+  "file": "library/schumann-soldiers.musicxml"
+ },
+ {
+  "id": "schumann-little-piece",
+  "title": "Little Piece, Op. 68 No. 5",
+  "composer": "Robert Schumann",
+  "grade": 3,
+  "bpm": 92,
+  "source": "Mutopia Project, typeset by Philippe Hézaine",
+  "licence": "Creative Commons Attribution-ShareAlike 2.5",
+  "file": "library/schumann-little-piece.musicxml"
+ },
+ {
+  "id": "schumann-wild-rider",
+  "title": "The Wild Rider, Op. 68 No. 8",
+  "composer": "Robert Schumann",
+  "grade": 3,
+  "bpm": 150,
+  "source": "Mutopia Project, typeset by Philippe Hézaine",
+  "licence": "Creative Commons Attribution-ShareAlike 2.5",
+  "file": "library/schumann-wild-rider.musicxml"
+ },
+ {
+  "id": "tchaikovsky-morning-prayer",
+  "title": "Morning Prayer, Op. 39 No. 1",
+  "composer": "P.I. Tchaikovsky",
+  "grade": 3,
+  "bpm": 60,
+  "source": "Mutopia Project, typeset by Rem Zolotykh",
+  "licence": "Public Domain",
+  "file": "library/tchaikovsky-morning-prayer.musicxml"
+ },
+ {
+  "id": "tchaikovsky-old-french",
+  "title": "Old French Song, Op. 39 No. 16",
+  "composer": "P.I. Tchaikovsky",
+  "grade": 3,
+  "bpm": 72,
+  "source": "Mutopia Project, typeset by David McNamara",
+  "licence": "Public Domain",
+  "file": "library/tchaikovsky-old-french.musicxml"
+ },
+ {
+  "id": "burgmuller-candeur",
+  "title": "Candour (La Candeur), Op. 100 No. 1",
+  "composer": "J.F. Burgmüller",
+  "grade": 3,
+  "bpm": 100,
+  "source": "Mutopia Project, typeset by Bas Wassink",
+  "licence": "Public Domain",
+  "file": "library/burgmuller-candeur.musicxml"
+ },
+ {
+  "id": "burgmuller-pastorale",
+  "title": "Pastorale, Op. 100 No. 3",
+  "composer": "J.F. Burgmüller",
+  "grade": 3,
+  "bpm": 90,
+  "source": "Mutopia Project, typeset by Bas Wassink",
+  "licence": "Public Domain",
+  "file": "library/burgmuller-pastorale.musicxml"
+ },
+ {
+  "id": "schumann-happy-farmer",
+  "title": "The Happy Farmer, Op. 68 No. 10",
+  "composer": "Robert Schumann",
+  "grade": 4,
+  "bpm": 100,
+  "source": "Mutopia Project, typeset by Philippe Hézaine",
+  "licence": "Creative Commons Attribution-ShareAlike 2.5",
+  "file": "library/schumann-happy-farmer.musicxml"
+ },
+ {
+  "id": "burgmuller-arabesque",
+  "title": "Arabesque, Op. 100 No. 2",
+  "composer": "J.F. Burgmüller",
+  "grade": 4,
+  "bpm": 120,
+  "source": "Mutopia Project, typeset by Bas Wassink",
+  "licence": "Public Domain",
+  "file": "library/burgmuller-arabesque.musicxml"
+ },
+ {
+  "id": "clementi-sonatina-1",
+  "title": "Sonatina in C, Op. 36 No. 1 (1st mvt)",
+  "composer": "Muzio Clementi",
+  "grade": 4,
+  "bpm": 120,
+  "source": "Mutopia Project, typeset by Brian D. Rude",
+  "licence": "Public Domain",
+  "file": "library/clementi-sonatina-1.musicxml"
+ }
+]

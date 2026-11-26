@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#7b5cff">
+<title>Piano Practice</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1 id="appTitle">🎹 Piano Practice</h1>
+  <span class="tabs" id="tabs">
+    <button data-screen="library" class="active">📚 Library</button>
+    <button data-screen="practice">🎹 Practice</button>
+    <button data-screen="game" id="gameTab">🎮 Game 🔒</button>
+  </span>
+  <span class="spacer"></span>
+  <span id="status">Piano not connected</span>
+  <button id="connectBtn">Connect piano</button>
+  <button id="soundBtn" class="ghost small">🔈 Sound: off</button>
+  <button id="settingsBtn" class="ghost small" title="Settings">⚙️</button>
+  <button id="kbModeBtn" class="ghost small" title="Computer keys">⌨️</button>
+  <button id="fsBtn" class="ghost small" title="Full screen">⛶</button>
+</header>
+<main>
+  <div class="card hidden" id="kbhelp">
+    Computer keys: white <kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><kbd>F</kbd><kbd>G</kbd><kbd>H</kbd><kbd>J</kbd><kbd>K</kbd><kbd>L</kbd><kbd>;</kbd><kbd>'</kbd>,
+    black <kbd>W</kbd><kbd>E</kbd><kbd>T</kbd><kbd>Y</kbd><kbd>U</kbd><kbd>O</kbd><kbd>P</kbd>. <kbd>Z</kbd>/<kbd>X</kbd> octave down/up, <kbd>A</kbd> = <b id="kbBase">C4</b>.
+    You can also tap the keys on screen.
+  </div>
+
+  <!-- LIBRARY -->
+  <section class="screen active" id="screen-library">
+    <div class="card row">
+      <b class="big-label">Pick a piece</b>
+      <span class="spacer"></span>
+      <span id="todayTxt" class="muted"></span>
+      <label class="button-like">➕ Add a piece<input type="file" id="importFile" accept=".musicxml,.xml,.mxl,.mid,.midi" hidden></label>
+    </div>
+    <div id="libList"></div>
+    <p class="muted small-print" id="credits"></p>
+  </section>
+
+  <!-- PRACTICE -->
+  <section class="screen" id="screen-practice">
+    <div class="card toolbar row">
+      <div class="titleblock"><p id="pieceTitle"></p><span id="progressTxt" class="muted"></span></div>
+      <span class="seg row" id="handSeg">
+        <button data-hand="R" class="small">Right</button>
+        <button data-hand="both" class="small">Both</button>
+        <button data-hand="L" class="small">Left</button>
+      </span>
+      <label class="muted">Bars <input type="number" id="barFrom" min="1" value="1">–<input type="number" id="barTo" min="1" value="1"></label>
+      <label class="muted"><input type="checkbox" id="loopChk">Loop</label>
+      <span class="spacer"></span>
+      <button id="listenBtn" class="ghost small">▶ Listen</button>
+      <button id="restartBtn" class="ghost small">↺ Restart</button>
+      <button id="zoomOut" class="ghost small" title="Smaller music">A−</button>
+      <button id="zoomIn" class="ghost small" title="Bigger music">A+</button>
+    </div>
+    <div class="card sheetcard" id="sheetCard"><div id="cheer"></div><div id="sheet"></div></div>
+    <div class="rollwrap hidden" id="rollWrap"><div id="cheer2"></div><canvas id="rollCanvas"></canvas></div>
+  </section>
+
+  <!-- GAME -->
+  <section class="screen" id="screen-game">
+    <div class="card" id="lockCard"><div id="lockMsg">🔒 Finish one piece in <b>Practice</b> today to unlock the game!</div></div>
+    <div class="card hidden" id="gameCard">
+      <div class="row">
+        <b id="gameTitle" class="big-label"></b>
+        <span class="spacer"></span>
+        <span class="seg row" id="gHandSeg">
+          <button data-hand="R" class="small">Right</button>
+          <button data-hand="both" class="small">Both</button>
+          <button data-hand="L" class="small">Left</button>
+        </span>
+        <span class="seg row" id="speedSeg">
+          <button data-speed="slow" class="small">🐢 Slow</button>
+          <button data-speed="medium" class="small">🐇 Medium</button>
+          <button data-speed="fast" class="small">🚀 Full speed</button>
+        </span>
+        <button id="startGameBtn">▶ Start</button>
+      </div>
+      <div id="gameHud"><span>Score: <b id="hudScore">0</b></span><span>Combo: <b id="hudCombo">0</b></span><span id="hudMsg"></span></div>
+    </div>
+  </section>
+
+  <div class="card kbcard" id="kbCard">
+    <canvas id="gameCanvas" class="hidden"></canvas>
+    <div class="kb" id="kb"></div>
+  </div>
+</main>
+
+<div id="modal"><div class="box" id="modalBox"></div></div>
+<canvas id="confetti"></canvas>
+<div id="loading" class="hidden">Loading music…</div>
+
+<script src="vendor/opensheetmusicdisplay.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
