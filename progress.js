@@ -123,7 +123,7 @@ function trickyTip(bar){
 }
 function wireTricky(){
   const b = $("mTricky"); if (!b) return; const bar = trickyBars()[0];
-  b.onclick = () => { closeModal(); $("barFrom").value = bar; $("barTo").value = bar; $("loopChk").checked = true; startRun(); cheer(`Looping bar ${bar} — take it slowly`); };
+  b.onclick = () => { closeModal(); $("barFrom").value = bar; $("barTo").value = bar; setRepeat(true); startRun(); cheer(`Looping bar ${bar} — take it slowly`); };
 }
 function clearWatch(){ watchOn = false; document.querySelectorAll(".key.watch").forEach(k => k.classList.remove("watch")); }
 

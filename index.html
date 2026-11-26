@@ -58,11 +58,12 @@
         <button data-hand="L" class="small">Left</button>
       </span>
       <label class="muted">Bars <input type="number" id="barFrom" min="1" value="1">–<input type="number" id="barTo" min="1" value="1"></label>
-      <label class="muted"><input type="checkbox" id="loopChk">Loop</label>
+      <input type="checkbox" id="loopChk" hidden>
       <span class="spacer"></span>
       <button id="metroBtn" class="ghost small">🥁 Metronome</button>
       <button id="recBtn" class="ghost small">🎙 Record</button>
-      <button id="listenBtn" class="ghost small">▶ Listen</button>
+      <span class="btngrp"><button id="listenBtn" class="ghost small">▶ Listen</button>
+      <button id="repeatBtn" class="ghost small" aria-pressed="false" title="Start again from the beginning, over and over">🔁 Repeat</button></span>
       <button id="restartBtn" class="ghost small" title="Start again from the first bar">↺</button>
       <button id="zoomOut" class="ghost small" title="Smaller music">A−</button>
       <button id="zoomIn" class="ghost small" title="Bigger music">A+</button>

@@ -519,6 +519,9 @@ function finishRun(){
 }
 const nextPlayableFrom = i => { while (i < piece.steps.length && !expected(i, PR.hand).length) i++; return i; };
 $("restartBtn").onclick = () => startRun();
+/* 🔁 Repeat: one switch for both Practice (start again when you finish) and Listen (play again from the beginning) */
+function setRepeat(on){ $("loopChk").checked = on; const b = $("repeatBtn"); b.classList.toggle("on", on); b.setAttribute("aria-pressed", on); b.textContent = on ? "🔁 Repeat on" : "🔁 Repeat"; }
+$("repeatBtn").onclick = () => setRepeat(!$("loopChk").checked);
 $("barFrom").onchange = $("barTo").onchange = () => startRun();
 $("zoomIn").onclick = () => rezoom(0.1); $("zoomOut").onclick = () => rezoom(-0.1);
 function rezoom(dz){
@@ -553,20 +556,25 @@ function listenTick(){
     }, Math.max(0, (at - now) * 1000)));
     LS.i++;
   }
-  if (LS.i > LS.e && now > LS.endAt) { const from = LS.from; stopListen(); goStep(from); }
+  if (LS.i > LS.e && now > LS.endAt) {
+    if ($("loopChk").checked && PR) { clearInterval(LS.timer); LS.kills = []; listenFrom(PR.s, 0.6); return; }   // repeat: again from the start
+    const from = LS.from; stopListen(); goStep(from); }
   if (LS && LS.kills.length > 400) LS.kills.splice(0, 200);
 }
 $("listenBtn").onclick = () => {
   if (listening) return stopListen();
   if (!piece || !PR) return;
   listening = true; $("listenBtn").textContent = "■ Stop";
-  const ctx = audio(), lead = 0.25, spq = 60 / listenQuarterBpm(), from = PR.idx, st0 = piece.steps[from];
+  listenFrom(PR.idx, 0.25);
+};
+function listenFrom(from, lead){
+  const ctx = audio(), spq = 60 / listenQuarterBpm(), st0 = piece.steps[from];
   const last = piece.steps[PR.e], endQ = last.t + Math.max(1, ...last.notes.map(n => n.dur));
   LS = { i:from, e:PR.e, from, t0:st0.t, spq, aT0:ctx.currentTime + lead, pT0:performance.now() + lead * 1000, kills:[], timer:0 };
   LS.endAt = LS.aT0 + (endQ - st0.t) * spq + 0.3;
   if (typeof metroAlign === "function") metroAlign(LS.aT0, st0.pos || 0, spq);
   LS.timer = setInterval(listenTick, 25); listenTick();
-};
+}
 
 /* ---- note roll for MIDI pieces (no sheet music in a MIDI file) ---- */
 function laneMap(canvas){

@@ -44,7 +44,8 @@ const HELP = {
   listen:{ title:"▶ Listen", body:`
     <p>Plays the music from the blue marker onwards and lights up each key as it plays, so you can hear how it should sound.</p>
     <p>It plays at the <b>🥁 metronome speed</b>, so you can slow it down to 75% or 50%. Turn the metronome on first to hear the beat in time with the music.</p>
-    <p>If the piano is connected, <b>the piano plays it by itself</b>. A parent can turn this off on the parent screen. Tap <b>■ Stop</b> to stop.</p>` },
+    <p>If the piano is connected, <b>the piano plays it by itself</b>. A parent can turn this off on the parent screen. Tap <b>■ Stop</b> to stop.</p>
+    <p>Turn on <b>🔁 Repeat</b> and Listen starts again from the beginning each time it ends, until you tap Stop. Repeat also makes Practice start again when you finish.</p>` },
   hands:{ title:"✋ Which hand", body:`
     <ul><li><b>Right</b>: only the right-hand notes (top stave). Keys glow <span class="rh">blue</span>.</li>
       <li><b>Left</b>: only the left-hand notes (bottom stave). Keys glow <span class="lh">purple</span>.</li>
@@ -53,7 +54,7 @@ const HELP = {
     <p>A wrong key flashes <span class="bad">orange</span>. Just try again.</p>` },
   bars:{ title:"🔁 Practising part of a piece", body:`
     <p>Type the <b>first</b> and <b>last bar</b> you want to practise. The bar numbers are printed above the music.</p>
-    <p>Tick <b>Loop</b> to play that part again and again. Each time round, the app tells you how many notes you got right.</p>
+    <p>Turn on <b>🔁 Repeat</b> to play that part again and again from its first bar. Each time round, the app tells you how many notes you got right.</p>
     <p>After each run, the app shows your <b>tricky spots</b> and offers to loop the trickiest bar for you.</p>` },
   game:{ title:"🎮 The game", body:`
     <p>Notes fall down the screen. Play each one as it reaches the <b>yellow line</b>. You have about a quarter of a second either side.</p>
@@ -124,7 +125,7 @@ function addInfo(target, key, label){
 addInfo($("connectBtn"), "connect", "How to connect the piano");
 addInfo(document.querySelector("label.button-like"), "add", "How to add your own music");
 addInfo($("handSeg"), "hands", "Which hand / chords");
-addInfo($("loopChk").parentElement, "bars", "Practising part of a piece");
+addInfo($("barTo").parentElement, "bars", "Practising part of a piece");
 addInfo($("recBtn"), "record", "Recording yourself");
 addInfo($("metroBtn"), "metro", "How the metronome works");
 addInfo($("listenBtn"), "listen", "Listen");
