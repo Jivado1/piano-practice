@@ -717,7 +717,7 @@ function comboChime(tier){
   try { const ctx = audio(), t = ctx.currentTime + 0.01, base = [72, 74, 76, 77, 79, 81][Math.min(tier, 6) - 1] || 84;
     [0, 4, 7, 12].forEach((iv, j) => { const o = ctx.createOscillator(), g = ctx.createGain(), s = t + j * 0.07;
       o.type = "triangle"; o.frequency.value = 440 * Math.pow(2, (base + iv - 69) / 12);
-      g.gain.setValueAtTime(0.0001, s); g.gain.exponentialRampToValueAtTime(0.35, s + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, s + 0.35);
+      g.gain.setValueAtTime(0.0001, s); g.gain.exponentialRampToValueAtTime(0.245, s + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, s + 0.35);
       o.connect(g); g.connect(ctx.destination); o.start(s); o.stop(s + 0.4); });
   } catch (e) {}
 }
@@ -833,16 +833,32 @@ function fitLayout(){
   const kb = ($("kb").offsetHeight || 150) + 26, avail = window.innerHeight - kb - 14;
   for (const id of ["sheetCard","rollCanvas","gameCanvas"]) { const el = $(id); const top = el.getBoundingClientRect().top + window.scrollY;
     if (!el.offsetParent) continue;
-    if (id === "sheetCard" && ui.screen === "game" && document.body.classList.contains("game-wide")) { el.style.height = ""; continue; }   // CSS sizes the side column
+    if (id === "sheetCard" && ui.screen === "game" && document.body.classList.contains("game-wide")) continue;   // sized by alignWide() below
     if (id === "sheetCard" && ui.screen === "game") {   // about one line of music; the falling notes get the rest
       const c = osmd && osmd.cursor && osmd.cursor.cursorElement, lineH = (c && c.getBoundingClientRect().height) || 150;
       el.style.height = Math.round(Math.max(110, Math.min(lineH + 28, avail - top - 170))) + "px"; continue; }   // keep >=170px for falling notes
     el.style.height = Math.max(160, avail - top - (id === "gameCanvas" ? 0 : 10)) + "px"; }
-  if (document.body.classList.contains("game-wide")) document.body.style.setProperty("--gw-top", Math.round($("gameCard").getBoundingClientRect().bottom + 6) + "px");
+  alignWide();
   reflowSheet();
   if (ui.screen === "practice" && piece && piece.kind === "midi") drawRoll();
   if (G && G.running && ui.screen === "game") G.lanes = laneMap($("gameCanvas"));
 }
+/* Desktop Game: the music column sits to the right of the falling-notes + keyboard card, with the same top and bottom,
+   and its right edge lines up with the right edge of the controls card above. */
+function alignWide(){
+  const sc = $("sheetCard"), kc = $("kbCard"), wide = document.body.classList.contains("game-wide");
+  if (!wide) { if (sc.dataset.wide) { for (const p of ["top", "left", "width", "height"]) sc.style[p] = ""; kc.style.marginRight = ""; delete sc.dataset.wide; } return; }
+  sc.dataset.wide = "1";
+  const g = $("gameCard").getBoundingClientRect(), W = Math.round(Math.min(g.width * 0.36, 470)), gap = 12;
+  kc.style.marginRight = (W + gap) + "px";                        // first make room, then measure the left card
+  const k = kc.getBoundingClientRect(), sx = window.scrollX, sy = window.scrollY;
+  sc.style.left = Math.round(g.right - W + sx) + "px"; sc.style.width = W + "px";
+  sc.style.top = Math.round(k.top + sy) + "px"; sc.style.height = Math.round(k.height) + "px";
+}
+/* keep the column lined up when the cards change size without a window resize (e.g. a scrollbar appears or goes) */
+if (window.ResizeObserver) { let q = 0; const ro = new ResizeObserver(() => { if (q || !document.body.classList.contains("game-wide")) return;
+  q = requestAnimationFrame(() => { q = 0; alignWide(); reflowSheet(); if (G && G.running) G.lanes = laneMap($("gameCanvas")); }); });
+  ro.observe($("gameCard")); ro.observe($("kbCard")); }
 /* the music view changed width (moved into the narrow desktop column, or back): lay the music out again for the new width */
 function reflowSheet(){
   if (!osmd || !piece || piece.kind !== "xml" || !$("sheetCard").getClientRects().length) return;
