@@ -219,6 +219,7 @@ function placeSheet(screen){
   document.body.classList.toggle("game-wide", screen === "game" && WIDE.matches);   // desktop Game: falling notes + keys on the left, music column on the right
   if (screen === "game") { if (sc.parentElement !== $("screen-game")) $("gameCard").after(sc); sc.classList.add("mini"); }
   else { if (sc.nextElementSibling !== $("rollWrap")) $("rollWrap").before(sc); sc.classList.remove("mini", "offgame"); }
+  alignWide();
   if (screen === "game" || screen === "practice") applyZoom();
 }
 function updateGameTab(){ $("gameTab").textContent = gameOpen() ? "🎮 Game" : "🎮 Game 🔒"; }
@@ -321,7 +322,7 @@ async function loadPiece(meta){
     } else {
       $("sheetCard").classList.remove("hidden"); $("rollWrap").classList.add("hidden");
       const o = getOsmd(); o.zoom = curZoom();
-      await o.load(src); o.render(); o._w = $("sheet").clientWidth;
+      await o.load(src); o.zoom = curZoom(); o._w = $("sheet").clientWidth; o.render();
       steps = stepsFromOsmd(o, meta);
       const t = o.Sheet && o.Sheet.DefaultStartTempoInBpm; if (t && meta.mine) bpm = t;
       try { const ts = o.Sheet.SourceMeasures[0].ActiveTimeSignature; if (ts && ts.Numerator) timeSig = { num:ts.Numerator, den:ts.Denominator }; } catch (e) {}
@@ -573,7 +574,7 @@ function rezoom(dz){
 }
 function applyZoom(){
   if (!osmd || !piece || piece.kind !== "xml" || osmd.zoom === curZoom()) return;
-  osmd.zoom = curZoom(); osmd.render(); osmd._w = $("sheet").clientWidth; const i = cursorIdx; osmd.cursor.reset(); cursorIdx = 0; lastScrollTarget = -1; moveCursor(i);
+  osmd.zoom = curZoom(); osmd._w = $("sheet").clientWidth; osmd.render(); const i = cursorIdx; osmd.cursor.reset(); cursorIdx = 0; lastScrollTarget = -1; moveCursor(i);
   fitLayout(); if (G && G.running) G.lanes = laneMap($("gameCanvas"));
 }
 $("gZoomIn").onclick = () => rezoom(0.1); $("gZoomOut").onclick = () => rezoom(-0.1);
@@ -717,7 +718,7 @@ function comboChime(tier){
   try { const ctx = audio(), t = ctx.currentTime + 0.01, base = [72, 74, 76, 77, 79, 81][Math.min(tier, 6) - 1] || 84;
     [0, 4, 7, 12].forEach((iv, j) => { const o = ctx.createOscillator(), g = ctx.createGain(), s = t + j * 0.07;
       o.type = "triangle"; o.frequency.value = 440 * Math.pow(2, (base + iv - 69) / 12);
-      g.gain.setValueAtTime(0.0001, s); g.gain.exponentialRampToValueAtTime(0.245, s + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, s + 0.35);
+      g.gain.setValueAtTime(0.0001, s); g.gain.exponentialRampToValueAtTime(0.17, s + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, s + 0.35);
       o.connect(g); g.connect(ctx.destination); o.start(s); o.stop(s + 0.4); });
   } catch (e) {}
 }
@@ -863,7 +864,8 @@ if (window.ResizeObserver) { let q = 0; const ro = new ResizeObserver(() => { if
 function reflowSheet(){
   if (!osmd || !piece || piece.kind !== "xml" || !$("sheetCard").getClientRects().length) return;
   const w = $("sheet").clientWidth; if (!w) return;
-  if (osmd._w && Math.abs(w - osmd._w) > 30) { osmd.render(); const i = cursorIdx; osmd.cursor.reset(); cursorIdx = 0; lastScrollTarget = -1; moveCursor(i); }
+  const svg = $("sheet").querySelector("svg"), squashed = svg && svg.getBoundingClientRect().width < w * 0.5;
+  if ((osmd._w && Math.abs(w - osmd._w) > 30) || squashed) { osmd._w = w; osmd.render(); const i = cursorIdx; osmd.cursor.reset(); cursorIdx = 0; lastScrollTarget = -1; moveCursor(i); }
   osmd._w = w;
 }
 window.addEventListener("resize", () => setTimeout(fitLayout, 50));
