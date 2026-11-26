@@ -72,6 +72,14 @@ const HELP = {
   keys:{ title:"⌨️ Playing without a piano", body:`
     <p><b>Tap the keys on the screen</b>. They play a piano sound.</p>
     <p>Or use the <b>computer keyboard</b>: <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> <kbd>F</kbd> <kbd>G</kbd> <kbd>H</kbd> <kbd>J</kbd> <kbd>K</kbd> <kbd>L</kbd> <kbd>;</kbd> <kbd>'</kbd> are white keys starting from C. <kbd>W</kbd> <kbd>E</kbd> <kbd>T</kbd> <kbd>Y</kbd> <kbd>U</kbd> <kbd>O</kbd> <kbd>P</kbd> are black keys. <kbd>Z</kbd> and <kbd>X</kbd> move down or up an octave.</p>` },
+  metro:{ title:"🥁 Metronome", body:`
+    <p>The metronome clicks the beat so you can keep steady time. It starts at the <b>speed and beats per bar written in the music</b>.</p>
+    <ul><li><b>− / +</b> change the speed by 1 (hold the button to change it faster), or drag the slider.</li>
+      <li><b>50%</b> and <b>75%</b> slow it down to practise. <b>Song</b> goes back to the speed in the music.</li>
+      <li><b>👆 Tap</b>: tap the button in time 3 or 4 times to set the speed you want.</li>
+      <li>Beat 1 of every bar has a higher click and a <span class="bad">different colour</span>. You can turn this accent off.</li>
+      <li>6/8 counts <b>2</b> big beats per bar, and 9/8 counts 3.</li></ul>
+    <p class="muted">Each piece remembers its own metronome speed. The metronome stops when you leave the Practice screen.</p>` },
   sound:{ title:"🔊 Sound", body:`
     <p>🔊 Taps on the on-screen keys (and computer keys) play a grand-piano sound through the speaker.</p>
     <p>When the real piano is connected, it makes its own sound, so the speaker stays quiet while you play the piano.</p>
@@ -115,6 +123,7 @@ addInfo(document.querySelector("label.button-like"), "add", "How to add your own
 addInfo($("handSeg"), "hands", "Which hand / chords");
 addInfo($("loopChk").parentElement, "bars", "Practising part of a piece");
 addInfo($("recBtn"), "record", "Recording yourself");
+addInfo($("metroBtn"), "metro", "How the metronome works");
 addInfo($("listenBtn"), "listen", "Listen");
 addInfo($("startGameBtn"), "game", "How the game works");
 /* controls that open their help when tapped */
@@ -138,9 +147,10 @@ function gettingStarted(){
       ${step(3, "<b>🎹 Practice:</b> play the glowing keys. For chords, press every glowing key.", "hands")}
       ${step(4, "Practise a few bars on a <b>loop</b> until they're easy.", "bars")}
       ${step(5, "Finish a piece to unlock the <b>🎮 Game</b>.", "game")}
-      ${step(6, "<b>🎙 Record</b> yourself and listen back.", "record")}
-      ${step(7, "Add your own music with <b>➕ Add a piece</b>.", "add")}
-      ${step(8, "Keep your <b>🔥 streak</b> and collect <b>⭐ stickers</b>.", "streak")}
+      ${step(6, "Keep steady time with the <b>🥁 metronome</b>.", "metro")}
+      ${step(7, "<b>🎙 Record</b> yourself and listen back.", "record")}
+      ${step(8, "Add your own music with <b>➕ Add a piece</b>.", "add")}
+      ${step(9, "Keep your <b>🔥 streak</b> and collect <b>⭐ stickers</b>.", "streak")}
     </ol>
     <p class="muted small-print">No piano? <a href="#" id="gsKeys">Play with the screen or computer keys</a> · Sound: <a href="#" id="gsSound">about the speaker</a> · Grown-ups: <a href="#" id="gsParent">parent screen</a></p>
     <div class="row"><button id="gsOk">Let's play!</button></div>`);

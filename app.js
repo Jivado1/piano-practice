@@ -193,6 +193,7 @@ function noteOff(m){ const el = keyEls[m]; if (el) el.classList.remove("down"); 
 const ui = { screen:"library" };
 function show(screen){
   stopListen(); if (screen !== "game") stopGame();
+  if (screen !== "practice" && typeof metroStop === "function") { metroStop(); $("metroPanel").classList.add("hidden"); }
   document.querySelectorAll("#tabs button[data-screen]").forEach(b => b.classList.toggle("active", b.dataset.screen === screen));
   document.querySelectorAll(".screen").forEach(s => s.classList.toggle("active", s.id === "screen-" + screen));
   ui.screen = screen; updateGameTab(); closeModal();
@@ -280,9 +281,9 @@ async function loadPiece(meta){
     let src, kind = "xml";
     if (meta.mine) { const all = await DB.all(); const r = all.find(x => x.id === meta.id); if (!r) throw new Error("piece missing"); src = r.data; kind = r.kind; }
     else src = await (await fetch(meta.file)).text();
-    let steps, bpm = meta.bpm || 90;
+    let steps, bpm = meta.bpm || 90, timeSig = { num:4, den:4 };
     if (kind === "midi") {
-      const mf = parseMidi(src); steps = stepsFromMidi(mf); bpm = meta.bpm && !meta.mine ? meta.bpm : Math.round(60000000 / mf.tempo);
+      const mf = parseMidi(src); steps = stepsFromMidi(mf); if (mf.ts) timeSig = mf.ts; bpm = meta.bpm && !meta.mine ? meta.bpm : Math.round(60000000 / mf.tempo);
       $("sheetCard").classList.add("hidden"); $("rollWrap").classList.remove("hidden");
     } else {
       $("sheetCard").classList.remove("hidden"); $("rollWrap").classList.add("hidden");
@@ -290,10 +291,11 @@ async function loadPiece(meta){
       await o.load(src); o.render();
       steps = stepsFromOsmd(o, meta);
       const t = o.Sheet && o.Sheet.DefaultStartTempoInBpm; if (t && meta.mine) bpm = t;
+      try { const ts = o.Sheet.SourceMeasures[0].ActiveTimeSignature; if (ts && ts.Numerator) timeSig = { num:ts.Numerator, den:ts.Denominator }; } catch (e) {}
     }
     const mids = steps.flatMap(s => s.notes.map(n => n.midi));
     if (!mids.length) throw new Error("no notes found");
-    piece = { meta, kind, steps, bpm, lo:Math.min(...mids), hi:Math.max(...mids), bars:Math.max(...steps.map(s => s.bar)) };
+    piece = { meta, kind, steps, bpm, timeSig, lo:Math.min(...mids), hi:Math.max(...mids), bars:Math.max(...steps.map(s => s.bar)) };
     setTimeout(fitLayout, 0);
     return piece;
   } finally { $("loading").classList.add("hidden"); }
@@ -335,7 +337,7 @@ function parseMidi(buf){
   if (str(4) !== "MThd") throw new Error("not a MIDI file");
   const hl = u32(); const fmt = u16(), ntr = u16(), div = u16(); p += hl - 6;
   if (div & 0x8000) throw new Error("this MIDI timing format is not supported");
-  let tempo = 500000; const tracks = [];
+  let tempo = 500000, ts = null; const tracks = [];
   for (let t = 0; t < ntr && p < d.byteLength; t++) {
     if (str(4) !== "MTrk") throw new Error("broken MIDI track"); const len = u32(), end = p + len;
     let tick = 0, run = 0; const open = {}, notes = [];
@@ -344,6 +346,7 @@ function parseMidi(buf){
       if (st < 0x80) st = run; else { p++; if (st < 0xF0) run = st; }
       if (st === 0xFF) { const ty = d.getUint8(p++), l = vlq();
         if (ty === 0x51 && l === 3 && tempo === 500000) tempo = (d.getUint8(p) << 16) | (d.getUint8(p + 1) << 8) | d.getUint8(p + 2);
+        if (ty === 0x58 && l >= 2 && !ts) ts = { num:d.getUint8(p), den:Math.pow(2, d.getUint8(p + 1)) };
         p += l; continue; }
       if (st === 0xF0 || st === 0xF7) { p += vlq(); continue; }
       const cmd = st & 0xF0, ch = st & 0x0F;
@@ -355,7 +358,7 @@ function parseMidi(buf){
     }
     p = end; tracks.push(notes);
   }
-  return { tpq:div, tempo, tracks:tracks.filter(n => n.length), fmt };
+  return { tpq:div, tempo, ts, tracks:tracks.filter(n => n.length), fmt };
 }
 function stepsFromMidi(mf){
   let all = [];
@@ -370,7 +373,8 @@ function stepsFromMidi(mf){
     if (last && (n.start - last._tick) <= tol) { if (!last.notes.some(x => x.midi === n.midi)) last.notes.push(note); }
     else steps.push({ t:q, _tick:n.start, bar:0, notes:[note] });
   }
-  steps.forEach(s => s.bar = Math.floor(s.t / 4) + 1);   // MIDI has no bar lines we trust; assume 4 beats
+  const barQ = mf.ts ? mf.ts.num * 4 / mf.ts.den : 4;
+  steps.forEach(s => s.bar = Math.floor(s.t / barQ + 1e-6) + 1);   // bars from the file's time signature (4/4 if none)
   return steps;
 }
 
@@ -409,7 +413,7 @@ async function openPractice(){
   $("pieceTitle").textContent = meta.title;
   setHandSeg();
   buildKeyboard(piece.lo, piece.hi); kbOct = Math.max(1, Math.floor(piece.lo / 12) - 1); updKbBase();
-  fitLayout(); startRun();
+  fitLayout(); startRun(); if (typeof renderMetro === "function") renderMetro();
 }
 function setHandSeg(){
   document.querySelectorAll("#handSeg button").forEach(b => b.classList.toggle("active", b.dataset.hand === store.hand));
