@@ -14,7 +14,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 /* ============ saved progress (this device) ============ */
 const KEY = "piano.v2";
 let store = { name:"", pieces:{}, current:null, practiceDone:"", speed:"slow", hand:"both", sound:null,
-              zoom:0.9, fullKeys:false, playOnPiano:true, games:{},
+              zoom:0.9, zoomGame:0.7, fullKeys:false, playOnPiano:true, games:{},
               /* stage 2 */ days:{}, log:[], missNotes:{}, streak:{ count:0, lastDay:null, longest:0, freezes:0 },
               stickers:{}, goalMin:15, gameNeedsPractice:true, pin:null, welcomed:"" };
 try { const raw = localStorage.getItem(KEY); if (raw) store = Object.assign(store, JSON.parse(raw)); } catch (e) {}
@@ -216,6 +216,7 @@ function placeSheet(screen){
   const sc = $("sheetCard");
   if (screen === "game") { if (sc.parentElement !== $("screen-game")) $("gameCard").after(sc); sc.classList.add("mini"); }
   else { if (sc.nextElementSibling !== $("rollWrap")) $("rollWrap").before(sc); sc.classList.remove("mini", "offgame"); }
+  if (screen === "game" || screen === "practice") applyZoom();
 }
 function updateGameTab(){ $("gameTab").textContent = gameOpen() ? "🎮 Game" : "🎮 Game 🔒"; }
 
@@ -316,7 +317,7 @@ async function loadPiece(meta){
       $("sheetCard").classList.add("hidden"); $("rollWrap").classList.remove("hidden");
     } else {
       $("sheetCard").classList.remove("hidden"); $("rollWrap").classList.add("hidden");
-      const o = getOsmd(); o.zoom = store.zoom;
+      const o = getOsmd(); o.zoom = curZoom();
       await o.load(src); o.render();
       steps = stepsFromOsmd(o, meta);
       const t = o.Sheet && o.Sheet.DefaultStartTempoInBpm; if (t && meta.mine) bpm = t;
@@ -559,11 +560,20 @@ function setRepeat(on){ $("loopChk").checked = on; const b = $("repeatBtn"); b.c
 $("repeatBtn").onclick = () => setRepeat(!$("loopChk").checked);
 $("barFrom").onchange = $("barTo").onchange = () => startRun();
 $("zoomIn").onclick = () => rezoom(0.1); $("zoomOut").onclick = () => rezoom(-0.1);
+/* music size: Practice and Game each keep their own (the Game strip is smaller by default) */
+const zoomKey = () => ui.screen === "game" ? "zoomGame" : "zoom";
+const curZoom = () => store[zoomKey()] || 0.9;
 function rezoom(dz){
   if (!osmd || !piece || piece.kind !== "xml") return;
-  store.zoom = Math.min(1.8, Math.max(0.5, Math.round((store.zoom + dz) * 10) / 10)); save();
-  osmd.zoom = store.zoom; osmd.render(); const i = cursorIdx; osmd.cursor.reset(); cursorIdx = 0; moveCursor(i);
+  const k = zoomKey(); store[k] = Math.min(1.8, Math.max(0.4, Math.round((curZoom() + dz) * 10) / 10)); save();
+  applyZoom();
 }
+function applyZoom(){
+  if (!osmd || !piece || piece.kind !== "xml" || osmd.zoom === curZoom()) return;
+  osmd.zoom = curZoom(); osmd.render(); const i = cursorIdx; osmd.cursor.reset(); cursorIdx = 0; lastScrollTarget = -1; moveCursor(i);
+  fitLayout(); if (G && G.running) G.lanes = laneMap($("gameCanvas"));
+}
+$("gZoomIn").onclick = () => rezoom(0.1); $("gZoomOut").onclick = () => rezoom(-0.1);
 
 /* ---- listen: plays from the current spot at the METRONOME's speed, through the piano if connected.
         Notes are scheduled on the audio clock (look-ahead), and a running metronome is locked to the music's beats. ---- */
@@ -667,7 +677,7 @@ function startGame(){
     (store.hand === "both" || n.hand === store.hand ? notes : auto).push(o);
   }
   const end = Math.max(...notes.concat(auto).map(n => n.t + n.len)) + 1;
-  G = { notes, auto, start:now, end, running:true, score:0, combo:0, best:0, hits:0, msgT:0, lanes:laneMap($("gameCanvas")),
+  G = { fx:[], notes, auto, start:now, end, running:true, score:0, combo:0, best:0, hits:0, msgT:0, lanes:laneMap($("gameCanvas")),
         si:s, se:e, stepT:i => now + lead + (piece.steps[i].t - base) * spq };
   moveCursor(s);
   $("startGameBtn").textContent = "■ Stop"; cancelAnimationFrame(raf); raf = requestAnimationFrame(loop);
@@ -677,8 +687,41 @@ function gameNote(m){
   if (!G || !G.running) return; const now = performance.now() / 1000;
   let best = null; for (const n of G.notes) { if (n.hit || n.miss || n.midi !== m) continue; const d = Math.abs(n.t - now); if (d <= 0.25 && (!best || d < Math.abs(best.t - now))) best = n; }
   if (best) { best.hit = true; G.hits++; G.combo++; G.best = Math.max(G.best, G.combo); G.score += 100 + 10 * Math.min(G.combo, 20);
+    hitBurst(m, best.hand);
     flash(m, "ok"); hud(G.combo >= 10 && G.combo % 10 === 0 ? `${G.combo} in a row!` : ""); }
   else flash(m, "bad");
+}
+/* ---- hit effects: a flash of light where the bar meets the yellow line, a beam up the lane and a spray of sparks ---- */
+function hitBurst(m, hand){
+  const l = G.lanes && G.lanes[m]; if (!l) return;
+  const gold = G.combo >= 10, col = gold ? [255, 216, 74] : hand === "L" ? [199, 125, 255] : [95, 176, 255];
+  const sparks = Array.from({ length:gold ? 24 : 16 }, () => ({ a:-Math.PI / 2 + (Math.random() - .5) * 2.4, v:160 + Math.random() * 260, r:2 + Math.random() * 3 }));
+  (G.fx = G.fx || []).push({ x:l.x + l.w / 2, w:l.w, t0:performance.now() / 1000, col, sparks });
+}
+function drawFx(ctx, now, hitY){
+  if (!G || !G.fx || !G.fx.length) return;
+  G.fx = G.fx.filter(f => now - f.t0 < 0.7);
+  ctx.save(); ctx.globalCompositeOperation = "lighter";
+  for (const f of G.fx) {
+    const t = now - f.t0, k = 1 - t / 0.7, [r, g, b] = f.col, rgba = a => `rgba(${r},${g},${b},${a})`;
+    // beam up the lane
+    const bh = 150 * (0.5 + 0.5 * k), gr = ctx.createLinearGradient(0, hitY, 0, hitY - bh);
+    gr.addColorStop(0, rgba(0.85 * k)); gr.addColorStop(1, rgba(0));
+    ctx.fillStyle = gr; ctx.fillRect(f.x - f.w / 2, hitY - bh, f.w, bh);
+    // flash on the line, growing outwards
+    const rad = f.w * (1.1 + 2.6 * (1 - k)), rg = ctx.createRadialGradient(f.x, hitY, 0, f.x, hitY, rad);
+    rg.addColorStop(0, `rgba(255,255,255,${0.9 * k})`); rg.addColorStop(0.35, rgba(0.7 * k)); rg.addColorStop(1, rgba(0));
+    ctx.fillStyle = rg; ctx.beginPath(); ctx.ellipse(f.x, hitY, rad, rad * 0.55, 0, 0, Math.PI * 2); ctx.fill();
+    // bright edge where the bar touched the line
+    ctx.fillStyle = `rgba(255,255,255,${k})`; ctx.fillRect(f.x - f.w / 2 - 2, hitY - 5, f.w + 4, 8);
+    if (t < 0.12) { ctx.fillStyle = rgba(0.5 * (1 - t / 0.12)); ctx.fillRect(f.x - f.w, hitY - 40, f.w * 2, 46); }   // quick pop
+    // sparks
+    for (const s of f.sparks) {
+      const x = f.x + Math.cos(s.a) * s.v * t, y = hitY + Math.sin(s.a) * s.v * t + 260 * t * t;
+      ctx.fillStyle = rgba(k); ctx.beginPath(); ctx.arc(x, y, s.r * (0.5 + k), 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  ctx.restore();
 }
 function hud(msg){ $("hudScore").textContent = G.score; $("hudCombo").textContent = G.combo; if (msg) { $("hudMsg").textContent = msg; G.msgT = performance.now(); } }
 function loop(){
@@ -711,6 +754,7 @@ function drawGame(now){
     ctx.fillStyle = list === G.auto ? "rgba(200,190,220,.22)" : n.miss ? "rgba(160,150,180,.35)" : n.hand === "R" ? "#5fb0ff" : "#c77dff";
     roundRect(ctx, l.x + 2, yt, l.w - 4, h, 6);
   }
+  drawFx(ctx, now, hitY);
 }
 function finishGame(){
   stopGame(); const total = G.notes.length || 1, acc = G.hits / total, id = piece.meta.id;
