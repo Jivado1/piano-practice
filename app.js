@@ -417,10 +417,29 @@ function moveCursor(i){
   while (cursorIdx < i && !c.iterator.EndReached) { c.next(); cursorIdx++; }
   scrollToCursor();
 }
+/* Look-ahead scrolling: the current line sits at the top of the music box, and through the second half of the line
+   the music slides up, so the NEXT line is fully in view before the player gets there. */
+let lastScrollTarget = -1;
 function scrollToCursor(){
   try { const el = osmd.cursor.cursorElement, box = $("sheetCard"); if (!el || box.classList.contains("hidden")) return;
-    const d = el.getBoundingClientRect().top - box.getBoundingClientRect().top;
-    if (d < 0 || d + el.getBoundingClientRect().height > box.clientHeight) box.scrollTo({ top: box.scrollTop + d - 12, behavior:"smooth" });
+    const top0 = el.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop;   // current line, in scroll coordinates
+    let shift = 0;
+    const gs = osmd.GraphicSheet, mi = osmd.cursor.Iterator.CurrentMeasureIndex, gm = gs && gs.MeasureList[mi] && gs.MeasureList[mi].find(Boolean);
+    const sys = gm && gm.ParentMusicSystem;
+    if (sys) {
+      const all = gs.MusicPages.flatMap(p => p.MusicSystems), k = all.indexOf(sys), next = all[k + 1], u = 10 * osmd.zoom;
+      const sx = sys.PositionAndShape.AbsolutePosition.x * u, sw = sys.PositionAndShape.Size.width * u;
+      const prog = Math.min(1, Math.max(0, ((parseFloat(el.style.left) || 0) - sx) / Math.max(1, sw)));   // 0 = start of line, 1 = end
+      if (next) {
+        const gap = (next.PositionAndShape.AbsolutePosition.y - sys.PositionAndShape.AbsolutePosition.y) * u;
+        const lineH = el.getBoundingClientRect().height;
+        const need = Math.max(0, gap + lineH * 0.6 + 12 - box.clientHeight);   // show at least the top (treble) part of the next line
+        shift = Math.min(need, lineH * 0.4) * Math.min(1, Math.max(0, (prog - 0.5) * 2));   // slide during the 2nd half; never hide the notes being played
+      }
+    }
+    const target = Math.max(0, Math.round(top0 - 12 + shift));
+    if (Math.abs(target - lastScrollTarget) < 4 && Math.abs(box.scrollTop - target) < 4) return;
+    lastScrollTarget = target; box.scrollTo({ top:target, behavior:"smooth" });
   } catch (e) {}
 }
 const expected = (i, hand) => piece.steps[i].notes.filter(n => hand === "both" || n.hand === hand);
