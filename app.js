@@ -212,8 +212,11 @@ function show(screen){
 document.querySelectorAll("#tabs button[data-screen]").forEach(b => b.onclick = () => show(b.dataset.screen));
 /* There is one sheet-music view. In the Game it moves above the falling notes as a short strip (a line or so of music)
    with the blue cursor following the game, so the player can see which part of the piece they're in. */
+const WIDE = window.matchMedia("(min-width: 1000px) and (orientation: landscape) and (hover: hover) and (pointer: fine)");   // a desktop / laptop screen
+if (WIDE.addEventListener) WIDE.addEventListener("change", () => { placeSheet(ui.screen); fitLayout(); });
 function placeSheet(screen){
   const sc = $("sheetCard");
+  document.body.classList.toggle("game-wide", screen === "game" && WIDE.matches);   // desktop Game: falling notes + keys on the left, music column on the right
   if (screen === "game") { if (sc.parentElement !== $("screen-game")) $("gameCard").after(sc); sc.classList.add("mini"); }
   else { if (sc.nextElementSibling !== $("rollWrap")) $("rollWrap").before(sc); sc.classList.remove("mini", "offgame"); }
   if (screen === "game" || screen === "practice") applyZoom();
@@ -318,7 +321,7 @@ async function loadPiece(meta){
     } else {
       $("sheetCard").classList.remove("hidden"); $("rollWrap").classList.add("hidden");
       const o = getOsmd(); o.zoom = curZoom();
-      await o.load(src); o.render();
+      await o.load(src); o.render(); o._w = $("sheet").clientWidth;
       steps = stepsFromOsmd(o, meta);
       const t = o.Sheet && o.Sheet.DefaultStartTempoInBpm; if (t && meta.mine) bpm = t;
       try { const ts = o.Sheet.SourceMeasures[0].ActiveTimeSignature; if (ts && ts.Numerator) timeSig = { num:ts.Numerator, den:ts.Denominator }; } catch (e) {}
@@ -570,7 +573,7 @@ function rezoom(dz){
 }
 function applyZoom(){
   if (!osmd || !piece || piece.kind !== "xml" || osmd.zoom === curZoom()) return;
-  osmd.zoom = curZoom(); osmd.render(); const i = cursorIdx; osmd.cursor.reset(); cursorIdx = 0; lastScrollTarget = -1; moveCursor(i);
+  osmd.zoom = curZoom(); osmd.render(); osmd._w = $("sheet").clientWidth; const i = cursorIdx; osmd.cursor.reset(); cursorIdx = 0; lastScrollTarget = -1; moveCursor(i);
   fitLayout(); if (G && G.running) G.lanes = laneMap($("gameCanvas"));
 }
 $("gZoomIn").onclick = () => rezoom(0.1); $("gZoomOut").onclick = () => rezoom(-0.1);
@@ -692,18 +695,55 @@ function gameNote(m){
   else flash(m, "bad");
 }
 /* ---- hit effects: a flash of light where the bar meets the yellow line, a beam up the lane and a spray of sparks ---- */
+/* combo levels, like a dance game: every 5 in a row "unlocks" a new colour. Level 6+ is a rainbow. */
+const TIER_COLS = [null, [47, 230, 120], [255, 216, 74], [255, 140, 40], [255, 70, 170], [60, 230, 255]];
+const TIER_NAMES = ["", "GOOD!", "GREAT!", "SUPER!", "AMAZING!", "FANTASTIC!", "LEGENDARY!"];
+function hsl(h){ const f = n => { const k = (n + h / 30) % 12; return Math.round(255 * (0.5 - 0.5 * Math.max(-1, Math.min(k - 3, 9 - k, 1)))); }; return [f(0), f(8), f(4)]; }
+function tierCol(tier, hand){ return tier <= 0 ? (hand === "L" ? [199, 125, 255] : [95, 176, 255]) : tier <= 5 ? TIER_COLS[tier] : hsl(Math.random() * 360); }
 function hitBurst(m, hand){
   const l = G.lanes && G.lanes[m]; if (!l) return;
-  const gold = G.combo >= 10, col = gold ? [255, 216, 74] : hand === "L" ? [199, 125, 255] : [95, 176, 255];
-  const sparks = Array.from({ length:gold ? 24 : 16 }, () => ({ a:-Math.PI / 2 + (Math.random() - .5) * 2.4, v:160 + Math.random() * 260, r:2 + Math.random() * 3 }));
-  (G.fx = G.fx || []).push({ x:l.x + l.w / 2, w:l.w, t0:performance.now() / 1000, col, sparks });
+  const tier = Math.floor(G.combo / 5), now = performance.now() / 1000, col = tierCol(tier, hand);
+  const sparks = Array.from({ length:tier >= 2 ? 26 : 16 }, () => ({ a:-Math.PI / 2 + (Math.random() - .5) * 2.4, v:160 + Math.random() * 260, r:2 + Math.random() * 3,
+    col:tier >= 6 ? hsl(Math.random() * 360) : null }));
+  (G.fx = G.fx || []).push({ x:l.x + l.w / 2, w:l.w, t0:now, col, sparks });
+  if (G.combo >= 5 && G.combo % 5 === 0) {                        // milestone: big pop-up, a flash across the whole line, a fanfare
+    G.pop = { n:G.combo, t0:now, col:tier >= 6 ? null : col, name:TIER_NAMES[Math.min(tier, 6)] };
+    G.fx.push({ wide:true, t0:now, col });
+    comboChime(tier);
+  }
 }
-function drawFx(ctx, now, hitY){
+function comboChime(tier){
+  if (store.sound === false) return;
+  try { const ctx = audio(), t = ctx.currentTime + 0.01, base = [72, 74, 76, 77, 79, 81][Math.min(tier, 6) - 1] || 84;
+    [0, 4, 7, 12].forEach((iv, j) => { const o = ctx.createOscillator(), g = ctx.createGain(), s = t + j * 0.07;
+      o.type = "triangle"; o.frequency.value = 440 * Math.pow(2, (base + iv - 69) / 12);
+      g.gain.setValueAtTime(0.0001, s); g.gain.exponentialRampToValueAtTime(0.35, s + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, s + 0.35);
+      o.connect(g); g.connect(ctx.destination); o.start(s); o.stop(s + 0.4); });
+  } catch (e) {}
+}
+function drawCombo(ctx, now, W, H){
+  const p = G && G.pop; if (!p) return; const t = now - p.t0; if (t > 1.3) { G.pop = null; return; }
+  const pop = t < 0.18 ? 0.4 + 0.9 * (t / 0.18) : t < 0.3 ? 1.3 - 0.3 * ((t - 0.18) / 0.12) : 1, alpha = t > 0.9 ? Math.max(0, 1 - (t - 0.9) / 0.4) : 1;
+  const col = p.col || hsl((now * 400) % 360), size = Math.min(W * 0.16, H * 0.42);
+  ctx.save(); ctx.globalAlpha = alpha; ctx.translate(W / 2, H * 0.4); ctx.scale(pop, pop); ctx.rotate(-0.06);
+  ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
+  ctx.shadowColor = `rgb(${col})`; ctx.shadowBlur = 30;
+  ctx.font = `900 ${size}px Nunito, Segoe UI, sans-serif`; ctx.lineWidth = size / 9; ctx.strokeStyle = "#fff"; ctx.strokeText(`x${p.n}`, 0, 0);
+  ctx.fillStyle = `rgb(${col})`; ctx.fillText(`x${p.n}`, 0, 0);
+  ctx.font = `900 ${size * 0.32}px Nunito, Segoe UI, sans-serif`; ctx.lineWidth = size / 22;
+  ctx.strokeText(`COMBO! ${p.name}`, 0, size * 0.62); ctx.fillText(`COMBO! ${p.name}`, 0, size * 0.62);
+  ctx.restore();
+}
+function drawFx(ctx, now, hitY, W){
   if (!G || !G.fx || !G.fx.length) return;
   G.fx = G.fx.filter(f => now - f.t0 < 0.7);
   ctx.save(); ctx.globalCompositeOperation = "lighter";
   for (const f of G.fx) {
     const t = now - f.t0, k = 1 - t / 0.7, [r, g, b] = f.col, rgba = a => `rgba(${r},${g},${b},${a})`;
+    if (f.wide) {   // level-up: the whole yellow line lights up in the new colour
+      const band = ctx.createLinearGradient(0, hitY - 70, 0, hitY + 8);
+      band.addColorStop(0, rgba(0)); band.addColorStop(0.8, rgba(0.7 * k)); band.addColorStop(1, `rgba(255,255,255,${0.9 * k})`);
+      ctx.fillStyle = band; ctx.fillRect(0, hitY - 70, W, 78); continue; }
     // beam up the lane
     const bh = 150 * (0.5 + 0.5 * k), gr = ctx.createLinearGradient(0, hitY, 0, hitY - bh);
     gr.addColorStop(0, rgba(0.85 * k)); gr.addColorStop(1, rgba(0));
@@ -718,7 +758,7 @@ function drawFx(ctx, now, hitY){
     // sparks
     for (const s of f.sparks) {
       const x = f.x + Math.cos(s.a) * s.v * t, y = hitY + Math.sin(s.a) * s.v * t + 260 * t * t;
-      ctx.fillStyle = rgba(k); ctx.beginPath(); ctx.arc(x, y, s.r * (0.5 + k), 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = s.col ? `rgba(${s.col},${k})` : rgba(k); ctx.beginPath(); ctx.arc(x, y, s.r * (0.5 + k), 0, Math.PI * 2); ctx.fill();
     }
   }
   ctx.restore();
@@ -754,7 +794,7 @@ function drawGame(now){
     ctx.fillStyle = list === G.auto ? "rgba(200,190,220,.22)" : n.miss ? "rgba(160,150,180,.35)" : n.hand === "R" ? "#5fb0ff" : "#c77dff";
     roundRect(ctx, l.x + 2, yt, l.w - 4, h, 6);
   }
-  drawFx(ctx, now, hitY);
+  drawFx(ctx, now, hitY, W); drawCombo(ctx, now, W, H);
 }
 function finishGame(){
   stopGame(); const total = G.notes.length || 1, acc = G.hits / total, id = piece.meta.id;
@@ -793,11 +833,22 @@ function fitLayout(){
   const kb = ($("kb").offsetHeight || 150) + 26, avail = window.innerHeight - kb - 14;
   for (const id of ["sheetCard","rollCanvas","gameCanvas"]) { const el = $(id); const top = el.getBoundingClientRect().top + window.scrollY;
     if (!el.offsetParent) continue;
+    if (id === "sheetCard" && ui.screen === "game" && document.body.classList.contains("game-wide")) { el.style.height = ""; continue; }   // CSS sizes the side column
     if (id === "sheetCard" && ui.screen === "game") {   // about one line of music; the falling notes get the rest
       const c = osmd && osmd.cursor && osmd.cursor.cursorElement, lineH = (c && c.getBoundingClientRect().height) || 150;
       el.style.height = Math.round(Math.max(110, Math.min(lineH + 28, avail - top - 170))) + "px"; continue; }   // keep >=170px for falling notes
     el.style.height = Math.max(160, avail - top - (id === "gameCanvas" ? 0 : 10)) + "px"; }
+  if (document.body.classList.contains("game-wide")) document.body.style.setProperty("--gw-top", Math.round($("gameCard").getBoundingClientRect().bottom + 6) + "px");
+  reflowSheet();
   if (ui.screen === "practice" && piece && piece.kind === "midi") drawRoll();
+  if (G && G.running && ui.screen === "game") G.lanes = laneMap($("gameCanvas"));
+}
+/* the music view changed width (moved into the narrow desktop column, or back): lay the music out again for the new width */
+function reflowSheet(){
+  if (!osmd || !piece || piece.kind !== "xml" || !$("sheetCard").getClientRects().length) return;
+  const w = $("sheet").clientWidth; if (!w) return;
+  if (osmd._w && Math.abs(w - osmd._w) > 30) { osmd.render(); const i = cursorIdx; osmd.cursor.reset(); cursorIdx = 0; lastScrollTarget = -1; moveCursor(i); }
+  osmd._w = w;
 }
 window.addEventListener("resize", () => setTimeout(fitLayout, 50));
 

@@ -169,3 +169,6 @@ ol.gs li span:nth-child(2){flex:1}
 #metroPanel [data-pct],#mTap{flex:1}
 .sheetcard.mini{margin-bottom:8px}
 .sheetcard.mini.offgame{display:none}
+/* desktop Game: falling notes + keyboard on the left, a narrow scrolling music column on the right */
+body.game-wide #screen-game .sheetcard.mini{position:fixed;right:12px;top:var(--gw-top,190px);bottom:12px;width:min(34vw,470px);height:auto;margin:0;z-index:3}
+body.game-wide #kbCard{margin-right:calc(min(34vw,470px) + 24px)}
