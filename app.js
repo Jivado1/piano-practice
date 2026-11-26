@@ -42,31 +42,60 @@ const DB = {
 
 /* ============ sound (laptop/tablet speaker) + piano output ============ */
 let actx = null;
+/* "sound" = the tablet/computer speaker echoing the REAL piano. Auto: off when the piano is connected (it makes its own sound).
+   Taps on the on-screen keys and computer keys always sound, unless the speaker is switched off explicitly. */
 const soundOn = () => store.sound === null ? !midiIn : store.sound;
-function synth(m, len = 0.6, force = false){
-  if (!force && !soundOn()) return;
+const tapSoundOn = () => store.sound !== false;
+
+/* Grand-piano samples (Salamander Grand Piano, CC BY 3.0) — one every 3 semitones, pitch-shifted in between */
+const PIANO = { buf:{}, loading:null, voices:new Map() };
+const SAMPLE_NOTES = (() => { const out = [["A0", 21]];
+  for (let o = 1; o <= 7; o++) for (const [p, s] of [["C",0],["Ds",3],["Fs",6],["A",9]]) out.push([p + o, (o + 1) * 12 + s]);
+  out.push(["C8", 108]); return out; })();
+function audio(){ actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === "suspended") actx.resume(); return actx; }
+function loadPiano(){
+  if (PIANO.loading) return PIANO.loading;
+  const ctx = audio();
+  PIANO.loading = Promise.all(SAMPLE_NOTES.map(async ([n, m]) => {
+    try { const ab = await (await fetch("samples/" + n + ".mp3")).arrayBuffer(); PIANO.buf[m] = await ctx.decodeAudioData(ab); } catch (e) {} }));
+  return PIANO.loading;
+}
+for (const ev of ["pointerdown","keydown"]) document.addEventListener(ev, () => { try { loadPiano(); } catch (e) {} }, { once:true, capture:true });
+function nearestSample(m){ let best = null; for (const k in PIANO.buf) if (best === null || Math.abs(k - m) < Math.abs(best - m)) best = +k; return best; }
+/* start one note; returns release(atTime) */
+function voiceStart(m, vel = 80){
   try {
-    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
-    if (actx.state === "suspended") actx.resume();
-    const t = actx.currentTime, f = 440 * Math.pow(2, (m - 69) / 12);
-    const g = actx.createGain(); g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(0.16, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + Math.max(0.15, len));
-    g.connect(actx.destination);
-    for (const [type, mul, vol] of [["triangle",1,1],["sine",2,0.22]]) {
-      const o = actx.createOscillator(), og = actx.createGain(); o.type = type; o.frequency.value = f * mul;
-      og.gain.value = vol; o.connect(og); og.connect(g); o.start(t); o.stop(t + Math.max(0.15, len) + 0.05);
+    const ctx = audio(); loadPiano();
+    const t = ctx.currentTime, g = ctx.createGain(), k = nearestSample(m), v = 0.06 + 0.85 * Math.pow(vel / 127, 1.6);
+    g.connect(ctx.destination);
+    if (k !== null) {
+      const src = ctx.createBufferSource(); src.buffer = PIANO.buf[k]; src.playbackRate.value = Math.pow(2, (m - k) / 12);
+      g.gain.setValueAtTime(v, t); src.connect(g); src.start(t);
+      return (at = ctx.currentTime) => { try { g.gain.setTargetAtTime(0, Math.max(at, ctx.currentTime), 0.09); src.stop(Math.max(at, ctx.currentTime) + 1); } catch (e) {} };
     }
-  } catch (e) {}
+    /* samples not loaded yet: a soft synthetic tone */
+    const f = 440 * Math.pow(2, (m - 69) / 12); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v * 0.25, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 2);
+    const o = ctx.createOscillator(); o.type = "triangle"; o.frequency.value = f; o.connect(g); o.start(t); o.stop(t + 2.1);
+    return (at = ctx.currentTime) => { try { g.gain.cancelScheduledValues(at); g.gain.setTargetAtTime(0.0001, at, 0.05); } catch (e) {} };
+  } catch (e) { return () => {}; }
+}
+function pianoDown(m, vel){ pianoUp(m); PIANO.voices.set(m, voiceStart(m, vel)); }
+function pianoUp(m){ const r = PIANO.voices.get(m); if (r) { r(); PIANO.voices.delete(m); } }
+/* fixed-length note through the speaker (Listen, playback, game accompaniment) */
+function synth(m, len = 0.6, force = false, vel = 75){
+  if (!force && !soundOn()) return;
+  const rel = voiceStart(m, vel); try { rel(audio().currentTime + Math.max(0.12, len)); } catch (e) {}
 }
 function pianoOut(){ if (!midiAccess || !store.playOnPiano) return null; let o = null; midiAccess.outputs.forEach(x => { if (!o && x.state === "connected") o = x; }); return o; }
 /* play a note for "Listen"/accompaniment: through the real piano if possible, else the speaker */
 function playNote(m, secs, vel = 70){
   const o = pianoOut();
   if (o) { try { o.send([0x90, m, vel]); o.send([0x80, m, 0], performance.now() + Math.max(120, secs * 1000 - 30)); return; } catch (e) {} }
-  synth(m, secs, true);
+  synth(m, secs, true, vel);
 }
 function allNotesOff(){ const o = pianoOut(); if (o) try { o.send([0xB0, 123, 0]); } catch (e) {} }
-function updateSoundBtn(){ const on = soundOn(); $("soundBtn").textContent = on ? "🔊" : "🔈"; $("soundBtn").title = on ? "Speaker sound is on (tap to turn off)" : "Speaker sound is off (tap to turn on)"; }
+function updateSoundBtn(){ const on = store.sound !== false; $("soundBtn").textContent = on ? "🔊" : "🔇";
+  $("soundBtn").title = store.sound === false ? "Speaker is off (tap to turn on)" : midiIn && store.sound === null ? "Speaker on for screen keys; the piano plays its own sound" : "Speaker is on (tap to turn off)"; }
 
 /* ============ on-screen keyboard ============ */
 let keyEls = {};
@@ -153,12 +182,12 @@ $("kbModeBtn").onclick = () => $("kbhelp").classList.toggle("hidden");
 
 function noteOn(m, src, vel = 80){
   const el = keyEls[m]; if (el) el.classList.add("down");
-  if (src !== "midi" || soundOn()) synth(m);
+  if (src === "midi" ? soundOn() : tapSoundOn()) pianoDown(m, src === "midi" ? vel : 90);
   onActivity(m, vel);                       // practice minutes + recorder (progress.js)
   if (ui.screen === "practice") practiceNote(m);
   else if (ui.screen === "game") gameNote(m);
 }
-function noteOff(m){ const el = keyEls[m]; if (el) el.classList.remove("down"); recNoteOff(m); }
+function noteOff(m){ const el = keyEls[m]; if (el) el.classList.remove("down"); pianoUp(m); recNoteOff(m); }
 
 /* ============ screens ============ */
 const ui = { screen:"library" };
@@ -614,7 +643,7 @@ let wl = null;
 async function wakeLock(on){ try { if (on && !wl && navigator.wakeLock) { wl = await navigator.wakeLock.request("screen"); wl.addEventListener("release", () => wl = null); } else if (!on && wl) { await wl.release(); wl = null; } } catch (e) {} }
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && ui.screen !== "library") wakeLock(true); });
 $("fsBtn").onclick = () => { try { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); } catch (e) {} };
-$("soundBtn").onclick = () => { store.sound = !soundOn(); save(); updateSoundBtn(); };
+$("soundBtn").onclick = () => { store.sound = store.sound === false ? null : false; save(); updateSoundBtn(); };
 
 /* fill the screen: sheet / roll / game area get whatever height the keyboard leaves */
 function fitLayout(){

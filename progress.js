@@ -194,9 +194,8 @@ async function renderRecordings(){
 (() => {
   const b = $("parentBtn"); let t = 0;
   const cancel = () => { clearTimeout(t); b.classList.remove("holding"); };
-  b.addEventListener("pointerdown", e => { e.preventDefault(); b.classList.add("holding"); t = setTimeout(() => { cancel(); askPin(); }, 3000); });
+  b.addEventListener("pointerdown", e => { e.preventDefault(); b.classList.add("holding"); t = setTimeout(() => { cancel(); b._held = Date.now(); askPin(); }, 3000); });
   for (const ev of ["pointerup","pointerleave","pointercancel"]) b.addEventListener(ev, cancel);
-  b.addEventListener("click", () => { if (!b.classList.contains("holding")) cheer("Grown-ups: hold this button for 3 seconds"); });
 })();
 function askPin(){
   if (!store.pin) {
@@ -315,4 +314,5 @@ async function importProgress(f){
   await DB.open(); await loadLibrary();
   if (!store.current && library.length) store.current = library[0].id;
   show("library"); welcomeBack();
+  if (typeof maybeFirstRunHelp === "function" && !document.getElementById("modal").classList.contains("show")) maybeFirstRunHelp();
 })();

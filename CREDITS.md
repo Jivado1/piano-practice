@@ -28,3 +28,7 @@ Warm-up songs are traditional or public-domain melodies arranged for this app.
 ## Software
 
 - [OpenSheetMusicDisplay](https://github.com/opensheetmusicdisplay/opensheetmusicdisplay) 2.2.1, BSD-3-Clause licence: `vendor/opensheetmusicdisplay.min.js`.
+
+## Piano sound
+
+- Grand-piano samples (`samples/*.mp3`): **Salamander Grand Piano V3** by Alexander Holm, licence CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/). These are the compressed MP3 versions published with Tone.js.

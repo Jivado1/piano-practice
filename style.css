@@ -124,3 +124,24 @@ th{color:var(--muted)}
 #status{max-width:190px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 header #connectBtn{padding:8px 14px;font-size:15px}
 header h1{font-size:20px}
+
+/* help */
+.info{width:24px;height:24px;padding:0;border-radius:50%;font:italic 800 14px Georgia,serif;background:#e8e0ff;color:var(--purple);box-shadow:none;flex:none;margin-left:-4px;line-height:24px}
+.info:active{transform:none}
+#status[data-help],#streakPill{cursor:pointer}
+.helppop{position:fixed;z-index:70;background:#fff;border:3px solid var(--purple);border-radius:18px;box-shadow:0 12px 34px rgba(40,30,70,.28);max-height:80vh;overflow:auto;font-size:16px}
+.helppop::before{content:"";position:absolute;top:-10px;left:calc(var(--ax,50%) - 9px);border:9px solid transparent;border-top:0;border-bottom-color:var(--purple)}
+.helppop.above::before{top:auto;bottom:-10px;border-bottom:0;border-top:9px solid var(--purple)}
+.helppop.center{left:50%!important;top:50%!important;transform:translate(-50%,-50%)}
+.helppop.center::before{display:none}
+.hp-h{display:flex;align-items:center;gap:8px;padding:10px 12px 6px 16px;font-size:18px;color:var(--purple);position:sticky;top:0;background:#fff}
+.hp-h b{flex:1}
+.hp-x{background:none;color:var(--muted);box-shadow:none;padding:4px 8px;font-size:18px}
+.hp-b{padding:0 16px 12px}
+.hp-b ol,.hp-b ul{padding-left:22px;margin:6px 0}.hp-b li{margin:5px 0}.hp-b p{margin:8px 0}
+.hp-b .ok{color:var(--green);font-weight:800}.hp-b .rh{color:var(--rh);font-weight:800}.hp-b .lh{color:var(--lh);font-weight:800}.hp-b .bad{color:var(--orange);font-weight:800}
+.hp-b code{background:#f1ecff;border-radius:5px;padding:0 4px}
+ol.gs{list-style:none;padding:0;text-align:left;margin:6px 0}
+ol.gs li{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:16px}
+ol.gs li span:nth-child(2){flex:1}
+.gs-n{flex:none;width:28px;height:28px;border-radius:50%;background:var(--purple);color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center}
