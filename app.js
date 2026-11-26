@@ -63,21 +63,23 @@ function loadPiano(){
 for (const ev of ["pointerdown","keydown"]) document.addEventListener(ev, () => { try { loadPiano(); } catch (e) {} }, { once:true, capture:true });
 function nearestSample(m){ let best = null; for (const k in PIANO.buf) if (best === null || Math.abs(k - m) < Math.abs(best - m)) best = +k; return best; }
 /* start one note; returns release(atTime) */
-function voiceStart(m, vel = 80){
+function voiceStart(m, vel = 80, when = 0){
   try {
     const ctx = audio(); loadPiano();
-    const t = ctx.currentTime, g = ctx.createGain(), k = nearestSample(m), v = 0.06 + 0.85 * Math.pow(vel / 127, 1.6);
+    const t = Math.max(ctx.currentTime, when || 0), g = ctx.createGain(), k = nearestSample(m), v = 0.06 + 0.85 * Math.pow(vel / 127, 1.6);
     g.connect(ctx.destination);
     if (k !== null) {
       const src = ctx.createBufferSource(); src.buffer = PIANO.buf[k]; src.playbackRate.value = Math.pow(2, (m - k) / 12);
       g.gain.setValueAtTime(v, t); src.connect(g); src.start(t);
-      return (at = ctx.currentTime) => { try { g.gain.setTargetAtTime(0, Math.max(at, ctx.currentTime), 0.09); src.stop(Math.max(at, ctx.currentTime) + 1); } catch (e) {} };
+      const rel = (at = ctx.currentTime) => { try { g.gain.setTargetAtTime(0, Math.max(at, ctx.currentTime), 0.09); src.stop(Math.max(at, ctx.currentTime) + 1); } catch (e) {} };
+      rel.kill = () => { try { g.disconnect(); } catch (e) {} }; return rel;
     }
     /* samples not loaded yet: a soft synthetic tone */
     const f = 440 * Math.pow(2, (m - 69) / 12); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v * 0.25, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 2);
     const o = ctx.createOscillator(); o.type = "triangle"; o.frequency.value = f; o.connect(g); o.start(t); o.stop(t + 2.1);
-    return (at = ctx.currentTime) => { try { g.gain.cancelScheduledValues(at); g.gain.setTargetAtTime(0.0001, at, 0.05); } catch (e) {} };
-  } catch (e) { return () => {}; }
+    const rel = (at = ctx.currentTime) => { try { g.gain.cancelScheduledValues(at); g.gain.setTargetAtTime(0.0001, at, 0.05); } catch (e) {} };
+    rel.kill = () => { try { g.disconnect(); } catch (e) {} }; return rel;
+  } catch (e) { const r = () => {}; r.kill = () => {}; return r; }
 }
 function pianoDown(m, vel){ pianoUp(m); PIANO.voices.set(m, voiceStart(m, vel)); }
 function pianoUp(m){ const r = PIANO.voices.get(m); if (r) { r(); PIANO.voices.delete(m); } }
@@ -321,7 +323,12 @@ function stepsFromOsmd(o, meta){
     lastRaw = raw;
     const seen = new Set(); const nn = notes.filter(n => !seen.has(n.midi) && seen.add(n.midi));
     if (nn.length) lastLen = Math.min(...nn.map(n => n.dur));
-    steps.push({ t:abs, bar:it.CurrentMeasureIndex + 1, notes:nn });
+    let pos = 0;
+    try { const ms = o.Sheet.SourceMeasures[it.CurrentMeasureIndex]; pos = raw - ms.AbsoluteTimestamp.RealValue * 4;
+      const ts = ms.ActiveTimeSignature, barQ = ts ? ts.Numerator * 4 / ts.Denominator : 0, durQ = ms.Duration.RealValue * 4;
+      if (it.CurrentMeasureIndex === 0 && barQ && durQ < barQ - 1e-6) pos += barQ - durQ;   // pickup bar: notes sit at the END of the bar
+    } catch (e) {}
+    steps.push({ t:abs, bar:it.CurrentMeasureIndex + 1, pos, notes:nn });
     c.next();
   }
   c.reset(); cursorIdx = 0;
@@ -374,7 +381,7 @@ function stepsFromMidi(mf){
     else steps.push({ t:q, _tick:n.start, bar:0, notes:[note] });
   }
   const barQ = mf.ts ? mf.ts.num * 4 / mf.ts.den : 4;
-  steps.forEach(s => s.bar = Math.floor(s.t / barQ + 1e-6) + 1);   // bars from the file's time signature (4/4 if none)
+  steps.forEach(s => { s.bar = Math.floor(s.t / barQ + 1e-6) + 1; s.pos = s.t - (s.bar - 1) * barQ; });   // bars from the file's time signature (4/4 if none)
   return steps;
 }
 
@@ -501,27 +508,45 @@ function rezoom(dz){
   osmd.zoom = store.zoom; osmd.render(); const i = cursorIdx; osmd.cursor.reset(); cursorIdx = 0; moveCursor(i);
 }
 
-/* ---- listen: plays from the current spot, through the piano if connected ---- */
-let listening = false, listenTimers = [];
+/* ---- listen: plays from the current spot at the METRONOME's speed, through the piano if connected.
+        Notes are scheduled on the audio clock (look-ahead), and a running metronome is locked to the music's beats. ---- */
+let listening = false, listenTimers = [], LS = null;
+function listenQuarterBpm(){ if (typeof metroCfg === "function") { const c = metroCfg(); return c.bpm * c.sb.unitQ; } return piece.bpm; }
 function stopListen(){
   listenTimers.forEach(clearTimeout); listenTimers = [];
+  if (LS) { clearInterval(LS.timer); LS.kills.forEach(k => k()); LS = null; }
   if (listening) { listening = false; allNotesOff(); $("listenBtn").textContent = "▶ Listen"; if (PR) goStep(PR.idx); }
+}
+function listenTick(){
+  if (!LS) return;
+  const ctx = audio(), now = ctx.currentTime, out = pianoOut();
+  while (LS.i <= LS.e) {
+    const i = LS.i, st = piece.steps[i], at = LS.aT0 + (st.t - LS.t0) * LS.spq;
+    if (at > now + 0.15) break;
+    for (const n of st.notes) {
+      const len = Math.max(0.08, n.dur * LS.spq);
+      if (out) { const pt = LS.pT0 + (at - LS.aT0) * 1000; try { out.send([0x90, n.midi, 72], pt); out.send([0x80, n.midi, 0], pt + Math.max(80, len * 1000 - 30)); } catch (e) {} }
+      else { const rel = voiceStart(n.midi, 72, at); rel(at + len); LS.kills.push(rel.kill); }
+    }
+    listenTimers.push(setTimeout(() => {               // the picture follows the sound
+      if (!listening) return; moveCursor(i); showTargets(new Map(st.notes.map(n => [n.midi, n.hand])));
+      if (piece.kind === "midi") { PR.idx = i; drawRoll(); }
+    }, Math.max(0, (at - now) * 1000)));
+    LS.i++;
+  }
+  if (LS.i > LS.e && now > LS.endAt) { const from = LS.from; stopListen(); goStep(from); }
+  if (LS && LS.kills.length > 400) LS.kills.splice(0, 200);
 }
 $("listenBtn").onclick = () => {
   if (listening) return stopListen();
   if (!piece || !PR) return;
   listening = true; $("listenBtn").textContent = "■ Stop";
-  const spq = 60 / (piece.bpm * 0.85), from = PR.idx, t0 = piece.steps[from].t;
-  for (let i = from; i <= PR.e; i++) {
-    const st = piece.steps[i];
-    listenTimers.push(setTimeout(() => {
-      st.notes.forEach(n => playNote(n.midi, n.dur * spq));
-      moveCursor(i); showTargets(new Map(st.notes.map(n => [n.midi, n.hand])));
-      if (piece.kind === "midi") { PR.idx = i; drawRoll(); }
-    }, (st.t - t0) * spq * 1000));
-  }
-  const endT = piece.steps[PR.e].t + Math.max(1, ...piece.steps[PR.e].notes.map(n => n.dur));
-  listenTimers.push(setTimeout(() => { listening = false; $("listenBtn").textContent = "▶ Listen"; allNotesOff(); goStep(from); }, (endT - t0) * spq * 1000 + 300));
+  const ctx = audio(), lead = 0.25, spq = 60 / listenQuarterBpm(), from = PR.idx, st0 = piece.steps[from];
+  const last = piece.steps[PR.e], endQ = last.t + Math.max(1, ...last.notes.map(n => n.dur));
+  LS = { i:from, e:PR.e, from, t0:st0.t, spq, aT0:ctx.currentTime + lead, pT0:performance.now() + lead * 1000, kills:[], timer:0 };
+  LS.endAt = LS.aT0 + (endQ - st0.t) * spq + 0.3;
+  if (typeof metroAlign === "function") metroAlign(LS.aT0, st0.pos || 0, spq);
+  LS.timer = setInterval(listenTick, 25); listenTick();
 };
 
 /* ---- note roll for MIDI pieces (no sheet music in a MIDI file) ---- */

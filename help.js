@@ -43,6 +43,7 @@ const HELP = {
       <li><b>✕</b> deletes it.</li></ul>` },
   listen:{ title:"▶ Listen", body:`
     <p>Plays the music from the blue marker onwards and lights up each key as it plays, so you can hear how it should sound.</p>
+    <p>It plays at the <b>🥁 metronome speed</b>, so you can slow it down to 75% or 50%. Turn the metronome on first to hear the beat in time with the music.</p>
     <p>If the piano is connected, <b>the piano plays it by itself</b>. A parent can turn this off on the parent screen. Tap <b>■ Stop</b> to stop.</p>` },
   hands:{ title:"✋ Which hand", body:`
     <ul><li><b>Right</b>: only the right-hand notes (top stave). Keys glow <span class="rh">blue</span>.</li>
@@ -77,7 +78,9 @@ const HELP = {
     <ul><li><b>− / +</b> change the speed by 1 (hold the button to change it faster), or drag the slider.</li>
       <li><b>50%</b> and <b>75%</b> slow it down to practise. <b>Song</b> goes back to the speed in the music.</li>
       <li><b>👆 Tap</b>: tap the button in time 3 or 4 times to set the speed you want.</li>
-      <li>Beat 1 of every bar has a higher click and a <span class="bad">different colour</span>. You can turn this accent off.</li>
+      <li>Beat 1 of every bar is a <b>louder, deeper drum</b> and lights up in a <span class="bad">different colour</span>. You can turn this accent off.</li>
+      <li><b>Sound</b>: choose 🥁 Drum, 🪵 Woodblock or 🖌️ Soft tick.</li>
+      <li><b>▶ Listen</b> plays at the metronome speed. If the metronome is on, it ticks in time with the music.</li>
       <li>6/8 counts <b>2</b> big beats per bar, and 9/8 counts 3.</li></ul>
     <p class="muted">Each piece remembers its own metronome speed. The metronome stops when you leave the Practice screen.</p>` },
   sound:{ title:"🔊 Sound", body:`
