@@ -14,27 +14,30 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 /* ============ saved progress (this device) ============ */
 const KEY = "piano.v2";
 let store = { name:"", pieces:{}, current:null, practiceDone:"", speed:"slow", hand:"both", sound:null,
-              zoom:0.9, fullKeys:false, playOnPiano:true, games:{} };
+              zoom:0.9, fullKeys:false, playOnPiano:true, games:{},
+              /* stage 2 */ days:{}, log:[], missNotes:{}, streak:{ count:0, lastDay:null, longest:0, freezes:0 },
+              stickers:{}, goalMin:15, gameNeedsPractice:true, pin:null, welcomed:"" };
 try { const raw = localStorage.getItem(KEY); if (raw) store = Object.assign(store, JSON.parse(raw)); } catch (e) {}
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} }
 function rec(id){ return store.pieces[id] || (store.pieces[id] = { plays:0, both:null, R:null, L:null }); }
 const starsFor = acc => acc >= 0.95 ? 3 : acc >= 0.8 ? 2 : 1;
-const gameOpen = () => store.practiceDone === today();
+const gameOpen = () => !store.gameNeedsPractice || store.practiceDone === today();
 
 /* ============ pieces the player adds (IndexedDB) ============ */
 const DB = {
   db:null,
   open(){ return new Promise((res) => {
     setTimeout(() => res(false), 2500);            // never let a stuck database block the app
-    try { const r = indexedDB.open("piano-pieces", 1);
-      r.onupgradeneeded = () => r.result.createObjectStore("pieces", { keyPath:"id" });
+    try { const r = indexedDB.open("piano-pieces", 2);
+      r.onupgradeneeded = () => { const db = r.result;
+        for (const s of ["pieces","recordings"]) if (!db.objectStoreNames.contains(s)) db.createObjectStore(s, { keyPath:"id" }); };
       r.onsuccess = () => { this.db = r.result; res(true); };
       r.onerror = () => res(false);
     } catch (e) { res(false); } }); },
-  tx(mode){ return this.db.transaction("pieces", mode).objectStore("pieces"); },
-  all(){ return new Promise(res => { if (!this.db) return res([]); const q = this.tx("readonly").getAll(); q.onsuccess = () => res(q.result || []); q.onerror = () => res([]); }); },
-  put(v){ return new Promise(res => { if (!this.db) return res(false); const q = this.tx("readwrite").put(v); q.onsuccess = () => res(true); q.onerror = () => res(false); }); },
-  del(id){ return new Promise(res => { if (!this.db) return res(false); const q = this.tx("readwrite").delete(id); q.onsuccess = () => res(true); q.onerror = () => res(false); }); },
+  tx(mode, s = "pieces"){ return this.db.transaction(s, mode).objectStore(s); },
+  all(s = "pieces"){ return new Promise(res => { if (!this.db) return res([]); const q = this.tx("readonly", s).getAll(); q.onsuccess = () => res(q.result || []); q.onerror = () => res([]); }); },
+  put(v, s = "pieces"){ return new Promise(res => { if (!this.db) return res(false); const q = this.tx("readwrite", s).put(v); q.onsuccess = () => res(true); q.onerror = () => res(false); }); },
+  del(id, s = "pieces"){ return new Promise(res => { if (!this.db) return res(false); const q = this.tx("readwrite", s).delete(id); q.onsuccess = () => res(true); q.onerror = () => res(false); }); },
 };
 
 /* ============ sound (laptop/tablet speaker) + piano output ============ */
@@ -63,7 +66,7 @@ function playNote(m, secs, vel = 70){
   synth(m, secs, true);
 }
 function allNotesOff(){ const o = pianoOut(); if (o) try { o.send([0xB0, 123, 0]); } catch (e) {} }
-function updateSoundBtn(){ $("soundBtn").textContent = soundOn() ? "🔊 Sound: on" : "🔈 Sound: off"; }
+function updateSoundBtn(){ const on = soundOn(); $("soundBtn").textContent = on ? "🔊" : "🔈"; $("soundBtn").title = on ? "Speaker sound is on (tap to turn off)" : "Speaker sound is off (tap to turn on)"; }
 
 /* ============ on-screen keyboard ============ */
 let keyEls = {};
@@ -116,7 +119,7 @@ function setStatus(){
 function bindInputs(){ if (!midiAccess) return; midiAccess.inputs.forEach(inp => { inp.onmidimessage = onMidi; }); setStatus(); }
 function onMidi(ev){
   const [st, d1, d2] = ev.data, cmd = st & 0xF0;
-  if (cmd === 0x90 && d2 > 0) noteOn(d1, "midi");
+  if (cmd === 0x90 && d2 > 0) noteOn(d1, "midi", d2);
   else if (cmd === 0x80 || (cmd === 0x90 && d2 === 0)) noteOff(d1);
 }
 async function connectMidi(){
@@ -148,13 +151,14 @@ window.addEventListener("keydown", e => {
 window.addEventListener("keyup", e => { const k = e.key.toLowerCase(); if (held.has(k)) { noteOff(held.get(k)); held.delete(k); } });
 $("kbModeBtn").onclick = () => $("kbhelp").classList.toggle("hidden");
 
-function noteOn(m, src){
+function noteOn(m, src, vel = 80){
   const el = keyEls[m]; if (el) el.classList.add("down");
   if (src !== "midi" || soundOn()) synth(m);
+  onActivity(m, vel);                       // practice minutes + recorder (progress.js)
   if (ui.screen === "practice") practiceNote(m);
   else if (ui.screen === "game") gameNote(m);
 }
-function noteOff(m){ const el = keyEls[m]; if (el) el.classList.remove("down"); }
+function noteOff(m){ const el = keyEls[m]; if (el) el.classList.remove("down"); recNoteOff(m); }
 
 /* ============ screens ============ */
 const ui = { screen:"library" };
@@ -163,11 +167,13 @@ function show(screen){
   document.querySelectorAll("#tabs button[data-screen]").forEach(b => b.classList.toggle("active", b.dataset.screen === screen));
   document.querySelectorAll(".screen").forEach(s => s.classList.toggle("active", s.id === "screen-" + screen));
   ui.screen = screen; updateGameTab(); closeModal();
-  $("kbCard").classList.toggle("hidden", screen === "library");
-  if (screen === "library") renderLibrary();
+  $("kbCard").classList.toggle("hidden", !["practice","game"].includes(screen));
+  if (screen === "library") { renderLibrary(); renderRecordings(); }
+  if (screen === "stickers") renderStickers();
+  if (screen === "parent") renderParent();
   if (screen === "practice") openPractice();
   if (screen === "game") prepareGame();
-  wakeLock(screen !== "library"); window.scrollTo(0, 0); setTimeout(fitLayout, 0);
+  wakeLock(screen !== "library"); window.scrollTo(0, 0); setTimeout(fitLayout, 0); setTimeout(fitLayout, 400);
 }
 document.querySelectorAll("#tabs button[data-screen]").forEach(b => b.onclick = () => show(b.dataset.screen));
 function updateGameTab(){ $("gameTab").textContent = gameOpen() ? "🎮 Game" : "🎮 Game 🔒"; }
@@ -422,6 +428,7 @@ function practiceNote(m){
     } else drawStep();
   } else {
     flash(m, "bad"); PR.wrong = true; PR.missed[PR.idx] = (PR.missed[PR.idx] || 0) + 1;
+    trackMiss(exp.filter(x => !PR.got.has(x)));
     cheer(SOFT[Math.floor(Math.random() * SOFT.length)], true);
   }
 }
@@ -431,8 +438,10 @@ function finishRun(){
   const prev = r[h]; r[h] = { best:Math.max(prev ? prev.best : 0, acc), stars:Math.max(prev ? prev.stars : 0, starsFor(acc)) };
   r.plays++; const gameWas = gameOpen(); store.practiceDone = today(); save(); updateGameTab();
   const whole = PR.s === nextPlayableFrom(0) && PR.e === piece.steps.length - 1;
+  const newStickers = afterPractice(acc, h, whole, $("loopChk").checked);
   if ($("loopChk").checked) {
     PR.loops++; cheer(`Loop ${PR.loops}: ${Math.round(acc * 100)}% — again!`);
+    if (newStickers.length) stickerToast(newStickers);
     setTimeout(() => { if (ui.screen === "practice" && $("loopChk").checked) startRun(true); }, 1200); return;
   }
   confetti();
@@ -441,8 +450,10 @@ function finishRun(){
     <p><b>${esc(piece.meta.title)}</b> — ${hname}${whole ? "" : `, bars ${$("barFrom").value}–${$("barTo").value}`}</p>
     <div class="big">${"⭐".repeat(st)}${"☆".repeat(3 - st)}</div>
     <p><b>${Math.round(acc * 100)}%</b> of the notes and chords right first time</p>
-    ${!gameWas ? `<p>🎮 The game is unlocked for today!</p>` : ""}
+    ${!gameWas && gameOpen() ? `<p>🎮 The game is unlocked for today!</p>` : ""}
+    ${trickyHtml()}${stickersHtml(newStickers)}
     <div class="row"><button class="ghost" id="mAgain">↺ Again</button><button class="ghost" id="mLib">📚 Library</button><button id="mGame">🎮 Game</button></div>`);
+  wireTricky();
   $("mAgain").onclick = () => { closeModal(); startRun(); };
   $("mLib").onclick = () => show("library");
   $("mGame").onclick = () => show("game");
@@ -576,8 +587,9 @@ function drawGame(now){
 function finishGame(){
   stopGame(); const total = G.notes.length || 1, acc = G.hits / total, id = piece.meta.id;
   store.games[id] = Math.max(store.games[id] || 0, acc); save(); confetti();
+  const newStickers = afterGame(acc, G.best);
   modal(`<h2>Great playing!</h2><div class="big">🎮 ${G.score}</div>
-    <p>You caught <b>${G.hits}</b> of ${G.notes.length} notes (${Math.round(acc * 100)}%)</p><p>Best combo: <b>${G.best}</b></p>
+    <p>You caught <b>${G.hits}</b> of ${G.notes.length} notes (${Math.round(acc * 100)}%)</p><p>Best combo: <b>${G.best}</b></p>${stickersHtml(newStickers)}
     <div class="row"><button class="ghost" id="mLib">📚 Library</button><button id="mAgain">↺ Again</button></div>`);
   $("mAgain").onclick = () => { closeModal(); startGame(); };
   $("mLib").onclick = () => show("library");
@@ -586,17 +598,6 @@ function finishGame(){
 window.addEventListener("resize", () => { if (G && G.running) G.lanes = laneMap($("gameCanvas")); else if (ui.screen === "game" && gameOpen()) drawGame(0); if (ui.screen === "practice" && piece && piece.kind === "midi") drawRoll(); });
 
 /* ============ settings, modal, confetti, screen wake ============ */
-$("settingsBtn").onclick = () => {
-  modal(`<h2>Settings</h2>
-    <p style="text-align:left">Player name<br><input type="text" id="setName" maxlength="20" value="${esc(store.name)}" placeholder="e.g. your first name"></p>
-    <p style="text-align:left"><label><input type="checkbox" id="setFull" ${store.fullKeys ? "checked" : ""}> Show all 88 keys</label></p>
-    <p style="text-align:left"><label><input type="checkbox" id="setOut" ${store.playOnPiano ? "checked" : ""}> "Listen" plays on the real piano (when connected)</label></p>
-    <p class="muted small-print" style="text-align:left">Progress is saved on this device only.</p>
-    <div class="row"><button class="ghost" id="setReset">Reset progress</button><button id="setOk">Done</button></div>`);
-  $("setOk").onclick = () => { store.name = $("setName").value.trim(); store.fullKeys = $("setFull").checked; store.playOnPiano = $("setOut").checked; save(); applyName(); closeModal();
-    if (piece && ui.screen !== "library") { buildKeyboard(piece.lo, piece.hi); if (ui.screen === "practice" && PR) drawStep(); } };
-  $("setReset").onclick = () => { if (confirm("Delete all stars and scores on this device?")) { store.pieces = {}; store.games = {}; store.practiceDone = ""; save(); closeModal(); show("library"); } };
-};
 function applyName(){ const t = store.name ? `${store.name}'s Piano` : "Piano Practice"; $("appTitle").textContent = "🎹 " + t; document.title = t; }
 function modal(html){ $("modalBox").innerHTML = html; $("modal").classList.add("show"); }
 function closeModal(){ $("modal").classList.remove("show"); }
@@ -624,10 +625,4 @@ function fitLayout(){
 }
 window.addEventListener("resize", () => setTimeout(fitLayout, 50));
 
-/* ============ start ============ */
-(async () => {
-  applyName(); updateSoundBtn(); updKbBase();
-  await DB.open(); await loadLibrary();
-  if (!store.current && library.length) store.current = library[0].id;
-  show("library");
-})();
+/* start-up lives at the end of progress.js (loaded after this file) */

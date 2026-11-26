@@ -16,12 +16,14 @@
     <button data-screen="library" class="active">📚 Library</button>
     <button data-screen="practice">🎹 Practice</button>
     <button data-screen="game" id="gameTab">🎮 Game 🔒</button>
+    <button data-screen="stickers">⭐ Stickers</button>
   </span>
   <span class="spacer"></span>
+  <span id="streakPill" class="pill">🔥 0</span>
   <span id="status">Piano not connected</span>
   <button id="connectBtn">Connect piano</button>
   <button id="soundBtn" class="ghost small">🔈 Sound: off</button>
-  <button id="settingsBtn" class="ghost small" title="Settings">⚙️</button>
+  <button id="parentBtn" class="ghost small" title="Grown-ups: hold for 3 seconds">👪</button>
   <button id="kbModeBtn" class="ghost small" title="Computer keys">⌨️</button>
   <button id="fsBtn" class="ghost small" title="Full screen">⛶</button>
 </header>
@@ -41,6 +43,7 @@
       <label class="button-like">➕ Add a piece<input type="file" id="importFile" accept=".musicxml,.xml,.mxl,.mid,.midi" hidden></label>
     </div>
     <div id="libList"></div>
+    <div id="recList"></div>
     <p class="muted small-print" id="credits"></p>
   </section>
 
@@ -56,6 +59,7 @@
       <label class="muted">Bars <input type="number" id="barFrom" min="1" value="1">–<input type="number" id="barTo" min="1" value="1"></label>
       <label class="muted"><input type="checkbox" id="loopChk">Loop</label>
       <span class="spacer"></span>
+      <button id="recBtn" class="ghost small">🎙 Record</button>
       <button id="listenBtn" class="ghost small">▶ Listen</button>
       <button id="restartBtn" class="ghost small">↺ Restart</button>
       <button id="zoomOut" class="ghost small" title="Smaller music">A−</button>
@@ -63,6 +67,15 @@
     </div>
     <div class="card sheetcard" id="sheetCard"><div id="cheer"></div><div id="sheet"></div></div>
     <div class="rollwrap hidden" id="rollWrap"><div id="cheer2"></div><canvas id="rollCanvas"></canvas></div>
+  </section>
+
+  <!-- STICKERS -->
+  <section class="screen" id="screen-stickers"><div id="stickerBody"></div></section>
+
+  <!-- PARENT -->
+  <section class="screen" id="screen-parent">
+    <div class="card row"><b class="big-label">👪 Parent screen</b><span class="spacer"></span><button class="ghost small" id="parentClose">✕ Close</button></div>
+    <div id="parentBody"></div>
   </section>
 
   <!-- GAME -->
@@ -100,5 +113,6 @@
 
 <script src="vendor/opensheetmusicdisplay.min.js"></script>
 <script src="app.js"></script>
+<script src="progress.js"></script>
 </body>
 </html>
