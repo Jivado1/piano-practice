@@ -110,6 +110,116 @@
   "source": "Arranged for this app"
  },
  {
+  "id": "warmup-row-row",
+  "title": "Row, Row, Row Your Boat (left hand)",
+  "composer": "",
+  "grade": 0,
+  "bpm": 120,
+  "file": "library/warmup-row-row.musicxml",
+  "hand": "L",
+  "licence": "Public Domain",
+  "source": "Arranged for this app"
+ },
+ {
+  "id": "warmup-old-macdonald",
+  "title": "Old MacDonald Had a Farm",
+  "composer": "",
+  "grade": 0,
+  "bpm": 110,
+  "file": "library/warmup-old-macdonald.musicxml",
+  "hand": "R",
+  "licence": "Public Domain",
+  "source": "Arranged for this app"
+ },
+ {
+  "id": "warmup-yankee-doodle",
+  "title": "Yankee Doodle",
+  "composer": "",
+  "grade": 0,
+  "bpm": 110,
+  "file": "library/warmup-yankee-doodle.musicxml",
+  "hand": "R",
+  "licence": "Public Domain",
+  "source": "Arranged for this app"
+ },
+ {
+  "id": "warmup-au-clair",
+  "title": "Au Clair de la Lune (left hand)",
+  "composer": "",
+  "grade": 0,
+  "bpm": 90,
+  "file": "library/warmup-au-clair.musicxml",
+  "hand": "L",
+  "licence": "Public Domain",
+  "source": "Arranged for this app"
+ },
+ {
+  "id": "warmup-lightly-row",
+  "title": "Lightly Row",
+  "composer": "",
+  "grade": 0,
+  "bpm": 100,
+  "file": "library/warmup-lightly-row.musicxml",
+  "hand": "R",
+  "licence": "Public Domain",
+  "source": "Arranged for this app"
+ },
+ {
+  "id": "warmup-happy-birthday",
+  "title": "Happy Birthday",
+  "composer": "",
+  "grade": 0,
+  "bpm": 100,
+  "file": "library/warmup-happy-birthday.musicxml",
+  "hand": "R",
+  "licence": "Public Domain",
+  "source": "Arranged for this app"
+ },
+ {
+  "id": "warmup-oh-susanna",
+  "title": "Oh! Susanna",
+  "composer": "",
+  "grade": 0,
+  "bpm": 110,
+  "file": "library/warmup-oh-susanna.musicxml",
+  "hand": "R",
+  "licence": "Public Domain",
+  "source": "Arranged for this app"
+ },
+ {
+  "id": "warmup-deck-the-halls",
+  "title": "Deck the Halls",
+  "composer": "",
+  "grade": 0,
+  "bpm": 110,
+  "file": "library/warmup-deck-the-halls.musicxml",
+  "hand": "R",
+  "licence": "Public Domain",
+  "source": "Arranged for this app"
+ },
+ {
+  "id": "warmup-we-wish-you",
+  "title": "We Wish You a Merry Christmas",
+  "composer": "",
+  "grade": 0,
+  "bpm": 120,
+  "file": "library/warmup-we-wish-you.musicxml",
+  "hand": "R",
+  "licence": "Public Domain",
+  "source": "Arranged for this app"
+ },
+ {
+  "id": "warmup-brahms-lullaby",
+  "title": "Lullaby (Wiegenlied)",
+  "composer": "",
+  "grade": 0,
+  "bpm": 80,
+  "file": "library/warmup-brahms-lullaby.musicxml",
+  "hand": "R",
+  "licence": "Public Domain",
+  "source": "Arranged for this app"
+ },
+ {
   "id": "bach-minuet-g",
   "title": "Minuet in G, BWV Anh. 114",
   "composer": "Christian Petzold (attr. J.S. Bach)",
@@ -268,5 +378,405 @@
   "source": "Mutopia Project, typeset by Brian D. Rude",
   "licence": "Public Domain",
   "file": "library/clementi-sonatina-1.musicxml"
+ },
+ {
+  "id": "bach-air-f",
+  "title": "Air in F, BWV Anh. 131",
+  "composer": "Anon. (Anna Magdalena Notebook)",
+  "grade": 1,
+  "bpm": 72,
+  "source": "Mutopia Project, typeset by Anonymous",
+  "licence": "Creative Commons Attribution-ShareAlike 2.5",
+  "file": "library/bach-air-f.musicxml"
+ },
+ {
+  "id": "bach-minuet-aminor",
+  "title": "Minuet in A minor, BWV Anh. 120",
+  "composer": "Anon. (Anna Magdalena Notebook)",
+  "grade": 1,
+  "bpm": 84,
+  "source": "Mutopia Project, typeset by Steven McDougall",
+  "licence": "Public Domain",
+  "file": "library/bach-minuet-aminor.musicxml"
+ },
+ {
+  "id": "bach-minuet-cminor",
+  "title": "Minuet in C minor, BWV Anh. 121",
+  "composer": "Anon. (Anna Magdalena Notebook)",
+  "grade": 1,
+  "bpm": 84,
+  "source": "Mutopia Project, typeset by Steven McDougall",
+  "licence": "Public Domain",
+  "file": "library/bach-minuet-cminor.musicxml"
+ },
+ {
+  "id": "bach-minuet-bflat",
+  "title": "Minuet in B-flat, BWV Anh. 118",
+  "composer": "Anon. (Anna Magdalena Notebook)",
+  "grade": 1,
+  "bpm": 88,
+  "source": "Mutopia Project, typeset by Steven McDougall",
+  "licence": "Public Domain",
+  "file": "library/bach-minuet-bflat.musicxml"
+ },
+ {
+  "id": "bach-minuet-f",
+  "title": "Minuet in F, BWV Anh. 113",
+  "composer": "Anon. (Anna Magdalena Notebook)",
+  "grade": 1,
+  "bpm": 96,
+  "source": "Mutopia Project, typeset by Allen Garvin",
+  "licence": "Public Domain",
+  "file": "library/bach-minuet-f.musicxml"
+ },
+ {
+  "id": "schumann-chorale",
+  "title": "Chorale, Op. 68 No. 4",
+  "composer": "Robert Schumann",
+  "grade": 1,
+  "bpm": 66,
+  "source": "Mutopia Project, typeset by Philippe Hézaine",
+  "licence": "Creative Commons Attribution-ShareAlike 2.5",
+  "file": "library/schumann-chorale.musicxml"
+ },
+ {
+  "id": "czerny-821-02",
+  "title": "Little Study, Op. 821 No. 2",
+  "composer": "Carl Czerny",
+  "grade": 1,
+  "bpm": 72,
+  "source": "Mutopia Project, typeset by Manuel Castejon Limas",
+  "licence": "Public Domain",
+  "file": "library/czerny-821-02.musicxml"
+ },
+ {
+  "id": "czerny-821-07",
+  "title": "Little Study, Op. 821 No. 7",
+  "composer": "Carl Czerny",
+  "grade": 1,
+  "bpm": 66,
+  "source": "Mutopia Project, typeset by Manuel Castejon Limas",
+  "licence": "Public Domain",
+  "file": "library/czerny-821-07.musicxml"
+ },
+ {
+  "id": "czerny-821-12",
+  "title": "Little Study, Op. 821 No. 12",
+  "composer": "Carl Czerny",
+  "grade": 1,
+  "bpm": 66,
+  "source": "Mutopia Project, typeset by Manuel Castejon Limas",
+  "licence": "Public Domain",
+  "file": "library/czerny-821-12.musicxml"
+ },
+ {
+  "id": "czerny-821-17",
+  "title": "Little Study, Op. 821 No. 17",
+  "composer": "Carl Czerny",
+  "grade": 1,
+  "bpm": 66,
+  "source": "Mutopia Project, typeset by Manuel Castejon Limas",
+  "licence": "Public Domain",
+  "file": "library/czerny-821-17.musicxml"
+ },
+ {
+  "id": "bach-minuet-g2",
+  "title": "Minuet in G, BWV Anh. 116",
+  "composer": "Anon. (Anna Magdalena Notebook)",
+  "grade": 2,
+  "bpm": 100,
+  "source": "Mutopia Project, typeset by Allen Garvin",
+  "licence": "Public Domain",
+  "file": "library/bach-minuet-g2.musicxml"
+ },
+ {
+  "id": "bach-polonaise-gminor",
+  "title": "Polonaise in G minor, BWV Anh. 119",
+  "composer": "Anon. (Anna Magdalena Notebook)",
+  "grade": 2,
+  "bpm": 84,
+  "source": "Mutopia Project, typeset by Steven McDougall",
+  "licence": "Public Domain",
+  "file": "library/bach-polonaise-gminor.musicxml"
+ },
+ {
+  "id": "bach-polonaise-dminor",
+  "title": "Polonaise in D minor, BWV Anh. 128",
+  "composer": "Anon. (Anna Magdalena Notebook)",
+  "grade": 2,
+  "bpm": 84,
+  "source": "Mutopia Project, typeset by Steven McDougall",
+  "licence": "Public Domain",
+  "file": "library/bach-polonaise-dminor.musicxml"
+ },
+ {
+  "id": "bach-polonaise-f",
+  "title": "Polonaise in F, BWV Anh. 117b",
+  "composer": "Anon. (Anna Magdalena Notebook)",
+  "grade": 2,
+  "bpm": 72,
+  "source": "Mutopia Project, typeset by Steven McDougall",
+  "licence": "Public Domain",
+  "file": "library/bach-polonaise-f.musicxml"
+ },
+ {
+  "id": "schumann-poor-orphan",
+  "title": "Poor Orphan, Op. 68 No. 6",
+  "composer": "Robert Schumann",
+  "grade": 2,
+  "bpm": 60,
+  "source": "Mutopia Project, typeset by Philippe Hézaine",
+  "licence": "Creative Commons Attribution-ShareAlike 2.5",
+  "file": "library/schumann-poor-orphan.musicxml"
+ },
+ {
+  "id": "czerny-821-05",
+  "title": "Little Study, Op. 821 No. 5",
+  "composer": "Carl Czerny",
+  "grade": 2,
+  "bpm": 60,
+  "source": "Mutopia Project, typeset by Manuel Castejon Limas",
+  "licence": "Public Domain",
+  "file": "library/czerny-821-05.musicxml"
+ },
+ {
+  "id": "czerny-821-08",
+  "title": "Little Study, Op. 821 No. 8",
+  "composer": "Carl Czerny",
+  "grade": 2,
+  "bpm": 80,
+  "source": "Mutopia Project, typeset by Manuel Castejon Limas",
+  "licence": "Public Domain",
+  "file": "library/czerny-821-08.musicxml"
+ },
+ {
+  "id": "czerny-821-09",
+  "title": "Little Study, Op. 821 No. 9",
+  "composer": "Carl Czerny",
+  "grade": 2,
+  "bpm": 120,
+  "source": "Mutopia Project, typeset by Manuel Castejon Limas",
+  "licence": "Public Domain",
+  "file": "library/czerny-821-09.musicxml"
+ },
+ {
+  "id": "czerny-821-16",
+  "title": "Little Study, Op. 821 No. 16",
+  "composer": "Carl Czerny",
+  "grade": 2,
+  "bpm": 60,
+  "source": "Mutopia Project, typeset by Manuel Castejon Limas",
+  "licence": "Public Domain",
+  "file": "library/czerny-821-16.musicxml"
+ },
+ {
+  "id": "czerny-821-19",
+  "title": "Little Study, Op. 821 No. 19",
+  "composer": "Carl Czerny",
+  "grade": 2,
+  "bpm": 80,
+  "source": "Mutopia Project, typeset by Manuel Castejon Limas",
+  "licence": "Public Domain",
+  "file": "library/czerny-821-19.musicxml"
+ },
+ {
+  "id": "bach-march-eflat",
+  "title": "March in E-flat, BWV Anh. 127",
+  "composer": "Anon. (Anna Magdalena Notebook)",
+  "grade": 3,
+  "bpm": 120,
+  "source": "Mutopia Project, typeset by Steven McDougall",
+  "licence": "Public Domain",
+  "file": "library/bach-march-eflat.musicxml"
+ },
+ {
+  "id": "schumann-first-loss",
+  "title": "First Loss, Op. 68 No. 16",
+  "composer": "Robert Schumann",
+  "grade": 3,
+  "bpm": 72,
+  "source": "Mutopia Project, typeset by Philippe Hézaine",
+  "licence": "Creative Commons Attribution-ShareAlike 2.5",
+  "file": "library/schumann-first-loss.musicxml"
+ },
+ {
+  "id": "schumann-folk-song",
+  "title": "Folk Song, Op. 68 No. 9",
+  "composer": "Robert Schumann",
+  "grade": 3,
+  "bpm": 63,
+  "source": "Mutopia Project, typeset by Philippe Hézaine",
+  "licence": "Creative Commons Attribution-ShareAlike 2.5",
+  "file": "library/schumann-folk-song.musicxml"
+ },
+ {
+  "id": "burgmuller-consolation",
+  "title": "Consolation, Op. 100 No. 13",
+  "composer": "J.F. Burgmüller",
+  "grade": 3,
+  "bpm": 112,
+  "source": "Mutopia Project, typeset by Bas Wassink",
+  "licence": "Public Domain",
+  "file": "library/burgmuller-consolation.musicxml"
+ },
+ {
+  "id": "burgmuller-progress",
+  "title": "Progress, Op. 100 No. 6",
+  "composer": "J.F. Burgmüller",
+  "grade": 3,
+  "bpm": 120,
+  "source": "Mutopia Project, typeset by Bas Wassink",
+  "licence": "Public Domain",
+  "file": "library/burgmuller-progress.musicxml"
+ },
+ {
+  "id": "burgmuller-sweet-sorrow",
+  "title": "Sweet Sorrow, Op. 100 No. 16",
+  "composer": "J.F. Burgmüller",
+  "grade": 3,
+  "bpm": 96,
+  "source": "Mutopia Project, typeset by Bas Wassink",
+  "licence": "Public Domain",
+  "file": "library/burgmuller-sweet-sorrow.musicxml"
+ },
+ {
+  "id": "mozart-sonata-c-fragment",
+  "title": "Sonata in C (fragment), K. 6 deest",
+  "composer": "W.A. Mozart",
+  "grade": 3,
+  "bpm": 104,
+  "source": "Mutopia Project, typeset by Maurizio Tomasi",
+  "licence": "Public Domain",
+  "file": "library/mozart-sonata-c-fragment.musicxml"
+ },
+ {
+  "id": "czerny-821-01",
+  "title": "Little Study, Op. 821 No. 1",
+  "composer": "Carl Czerny",
+  "grade": 3,
+  "bpm": 88,
+  "source": "Mutopia Project, typeset by Manuel Castejon Limas",
+  "licence": "Public Domain",
+  "file": "library/czerny-821-01.musicxml"
+ },
+ {
+  "id": "czerny-821-03",
+  "title": "Little Study, Op. 821 No. 3",
+  "composer": "Carl Czerny",
+  "grade": 3,
+  "bpm": 88,
+  "source": "Mutopia Project, typeset by Manuel Castejon Limas",
+  "licence": "Public Domain",
+  "file": "library/czerny-821-03.musicxml"
+ },
+ {
+  "id": "czerny-821-13",
+  "title": "Little Study, Op. 821 No. 13",
+  "composer": "Carl Czerny",
+  "grade": 3,
+  "bpm": 88,
+  "source": "Mutopia Project, typeset by Manuel Castejon Limas",
+  "licence": "Public Domain",
+  "file": "library/czerny-821-13.musicxml"
+ },
+ {
+  "id": "schumann-hunting-song",
+  "title": "Hunting Song, Op. 68 No. 7",
+  "composer": "Robert Schumann",
+  "grade": 4,
+  "bpm": 150,
+  "source": "Mutopia Project, typeset by Philippe Hézaine",
+  "licence": "Creative Commons Attribution-ShareAlike 3.0",
+  "file": "library/schumann-hunting-song.musicxml"
+ },
+ {
+  "id": "schumann-sicilienne",
+  "title": "Sicilienne, Op. 68 No. 11",
+  "composer": "Robert Schumann",
+  "grade": 4,
+  "bpm": 84,
+  "source": "Mutopia Project, typeset by Philippe Hézaine",
+  "licence": "Creative Commons Attribution-ShareAlike 2.5",
+  "file": "library/schumann-sicilienne.musicxml"
+ },
+ {
+  "id": "schumann-little-study",
+  "title": "Little Study, Op. 68 No. 14",
+  "composer": "Robert Schumann",
+  "grade": 4,
+  "bpm": 120,
+  "source": "Mutopia Project, typeset by Philippe Hézaine",
+  "licence": "Creative Commons Attribution-ShareAlike 2.5",
+  "file": "library/schumann-little-study.musicxml"
+ },
+ {
+  "id": "tchaikovsky-wooden-soldiers",
+  "title": "March of the Wooden Soldiers, Op. 39 No. 5",
+  "composer": "P.I. Tchaikovsky",
+  "grade": 4,
+  "bpm": 100,
+  "source": "Mutopia Project, typeset by Anonymous",
+  "licence": "Public Domain",
+  "file": "library/tchaikovsky-wooden-soldiers.musicxml"
+ },
+ {
+  "id": "burgmuller-little-gathering",
+  "title": "The Little Gathering, Op. 100 No. 4",
+  "composer": "J.F. Burgmüller",
+  "grade": 4,
+  "bpm": 132,
+  "source": "Mutopia Project, typeset by Bas Wassink",
+  "licence": "Public Domain",
+  "file": "library/burgmuller-little-gathering.musicxml"
+ },
+ {
+  "id": "burgmuller-innocence",
+  "title": "Innocence, Op. 100 No. 5",
+  "composer": "J.F. Burgmüller",
+  "grade": 4,
+  "bpm": 100,
+  "source": "Mutopia Project, typeset by Bas Wassink",
+  "licence": "Public Domain",
+  "file": "library/burgmuller-innocence.musicxml"
+ },
+ {
+  "id": "burgmuller-gracefulness",
+  "title": "Gracefulness, Op. 100 No. 8",
+  "composer": "J.F. Burgmüller",
+  "grade": 4,
+  "bpm": 88,
+  "source": "Mutopia Project, typeset by Bas Wassink",
+  "licence": "Public Domain",
+  "file": "library/burgmuller-gracefulness.musicxml"
+ },
+ {
+  "id": "burgmuller-styrian-dance",
+  "title": "Styrian Dance, Op. 100 No. 14",
+  "composer": "J.F. Burgmüller",
+  "grade": 4,
+  "bpm": 132,
+  "source": "Mutopia Project, typeset by Bas Wassink",
+  "licence": "Public Domain",
+  "file": "library/burgmuller-styrian-dance.musicxml"
+ },
+ {
+  "id": "chopin-prelude-7",
+  "title": "Prelude in A, Op. 28 No. 7",
+  "composer": "Frédéric Chopin",
+  "grade": 4,
+  "bpm": 66,
+  "source": "Mutopia Project, typeset by Magnus Lewis-Smith",
+  "licence": "Public Domain",
+  "file": "library/chopin-prelude-7.musicxml"
+ },
+ {
+  "id": "satie-gymnopedie-1",
+  "title": "Gymnopédie No. 1",
+  "composer": "Erik Satie",
+  "grade": 4,
+  "bpm": 72,
+  "source": "Mutopia Project, typeset by Evin Robertson",
+  "licence": "Public Domain",
+  "file": "library/satie-gymnopedie-1.musicxml"
  }
 ]
