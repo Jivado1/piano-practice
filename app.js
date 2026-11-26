@@ -200,6 +200,7 @@ function show(screen){
   document.querySelectorAll(".screen").forEach(s => s.classList.toggle("active", s.id === "screen-" + screen));
   ui.screen = screen; updateGameTab(); closeModal();
   $("kbCard").classList.toggle("hidden", !["practice","game"].includes(screen));
+  if (screen !== "game") $("gameCanvas").classList.add("hidden");   // the falling-notes area belongs to the Game only (prepareGame shows it again)
   if (screen === "library") { renderLibrary(); renderRecordings(); }
   if (screen === "stickers") renderStickers();
   if (screen === "parent") renderParent();
