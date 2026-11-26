@@ -215,7 +215,7 @@ let library = [], myPieces = [];
 const GRADE_NAMES = { 0:"Warm-ups", 1:"Grade 1 level", 2:"Grade 2 level", 3:"Grade 3 level", 4:"Grade 4 level", 99:"My pieces" };
 async function loadLibrary(){
   try { library = await (await fetch("library/index.json")).json(); } catch (e) { library = []; }
-  myPieces = (await DB.all()).map(p => ({ id:p.id, title:p.title, composer:p.composer || "Added by you", grade:99, bpm:p.bpm || 90, mine:true }));
+  myPieces = (await DB.all()).map(p => ({ id:p.id, title:p.title, composer:p.composer || "Added by you", grade:GRADE_NAMES[p.grade] ? p.grade : 99, bpm:p.bpm || 90, mine:true, rec:p }));
 }
 const allPieces = () => library.concat(myPieces);
 const findPiece = id => allPieces().find(p => p.id === id);
@@ -237,9 +237,12 @@ function renderLibrary(){
     for (const p of groups[g]) {
       const b = document.createElement("button"); b.className = "piece" + (p.id === store.current ? " current" : "");
       b.innerHTML = `<div class="t">${esc(p.title)}</div><div class="c">${esc(p.composer || "")}</div>${starsHtml(store.pieces[p.id])}` +
-        (p.mine ? `<span class="del" title="Remove">✕</span>` : "");
+        (p.mine ? `<span class="del" title="Remove">✕</span><span class="edit" title="Rename or change level">✎</span>` : "");
       b.onclick = async e => {
         if (e.target.classList.contains("del")) { if (confirm(`Remove "${p.title}" from this device?`)) { await DB.del(p.id); await loadLibrary(); renderLibrary(); } return; }
+        if (e.target.classList.contains("edit")) {
+          const info = await askPieceInfo(p.rec.title, p.rec.grade); if (!info) return;
+          Object.assign(p.rec, info); await DB.put(p.rec); await loadLibrary(); renderLibrary(); return; }
         store.current = p.id; save(); show("practice");
       };
       grid.appendChild(b);
@@ -263,9 +266,24 @@ $("importFile").addEventListener("change", async e => {
       const t = /<(work-title|movement-title)>([^<]+)</.exec(rec_.data); if (t) rec_.title = t[2].trim();
       const c = /<creator type="composer">([^<]+)</.exec(rec_.data); if (c) rec_.composer = c[1].trim(); }
   } catch (err) { alert("Sorry, that file could not be read: " + err.message); return; }
+  const info = await askPieceInfo(rec_.title, 99); if (!info) return;
+  Object.assign(rec_, info);
   if (!(await DB.put(rec_))) { alert("Sorry, this browser would not save the piece."); return; }
   await loadLibrary(); store.current = rec_.id; save(); show("practice");
 });
+/* name the piece and choose which level it is listed under (it stays on this device only) */
+function askPieceInfo(title, grade){
+  return new Promise(res => {
+    const opts = [0, 1, 2, 3, 4, 99].map(g => `<option value="${g}"${g === (grade ?? 99) ? " selected" : ""}>${GRADE_NAMES[g]}</option>`).join("");
+    modal(`<h2>Your piece</h2><div class="settings">
+      <p><label>Name <input type="text" id="pName" maxlength="80" value="${esc(title || "")}"></label></p>
+      <p><label>Show it under <select id="pGrade">${opts}</select></label></p></div>
+      <p class="muted">Saved on this device only. You can change this later with ✎.</p>
+      <p><button id="pOk">Save</button> <button class="ghost" id="pCancel">Cancel</button></p>`);
+    $("pOk").onclick = () => { closeModal(); res({ title:$("pName").value.trim() || title || "My piece", grade:+$("pGrade").value }); };
+    $("pCancel").onclick = () => { closeModal(); res(null); };
+  });
+}
 function readBinaryString(f){ return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsBinaryString(f); }); }
 
 /* ============ loading a piece into steps ============ */
