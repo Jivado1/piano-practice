@@ -212,7 +212,7 @@ function updateGameTab(){ $("gameTab").textContent = gameOpen() ? "🎮 Game" : 
 
 /* ============ library ============ */
 let library = [], myPieces = [];
-const GRADE_NAMES = { 0:"Warm-ups", 1:"Grade 1 level", 2:"Grade 2 level", 3:"Grade 3 level", 4:"Grade 4 level", 99:"My pieces" };
+const GRADE_NAMES = { 0:"Warm-ups", 1:"Grade 1 level", 2:"Grade 2 level", 3:"Grade 3 level", 4:"Grade 4 level", 5:"Grade 5+ (challenge)", 99:"My pieces" };
 async function loadLibrary(){
   try { library = await (await fetch("library/index.json")).json(); } catch (e) { library = []; }
   myPieces = (await DB.all()).map(p => ({ id:p.id, title:p.title, composer:p.composer || "Added by you", grade:GRADE_NAMES[p.grade] ? p.grade : 99, bpm:p.bpm || 90, mine:true, rec:p }));
@@ -274,7 +274,7 @@ $("importFile").addEventListener("change", async e => {
 /* name the piece and choose which level it is listed under (it stays on this device only) */
 function askPieceInfo(title, grade){
   return new Promise(res => {
-    const opts = [0, 1, 2, 3, 4, 99].map(g => `<option value="${g}"${g === (grade ?? 99) ? " selected" : ""}>${GRADE_NAMES[g]}</option>`).join("");
+    const opts = [0, 1, 2, 3, 4, 5, 99].map(g => `<option value="${g}"${g === (grade ?? 99) ? " selected" : ""}>${GRADE_NAMES[g]}</option>`).join("");
     modal(`<h2>Your piece</h2><div class="settings">
       <p><label>Name <input type="text" id="pName" maxlength="80" value="${esc(title || "")}"></label></p>
       <p><label>Show it under <select id="pGrade">${opts}</select></label></p></div>
