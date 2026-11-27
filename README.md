@@ -1,4 +1,4 @@
-# Piano Practice
+# GenMusic (formerly Piano Practice)
 
 A browser app for practising piano on a digital piano connected over USB (Web MIDI).
 

@@ -1,4 +1,4 @@
-/* Piano Practice — hears a real piano over Web MIDI, shows the sheet music,
+/* GenMusic (formerly Piano Practice) — hears a real piano over Web MIDI, shows the sheet music,
    waits for every note of a chord, and has a falling-notes game.
    Pieces: library/index.json (MusicXML) + pieces the player adds (MusicXML, .mxl, MIDI). */
 "use strict";
@@ -11,14 +11,62 @@ const today = () => { const d = new Date(); return d.getFullYear()+"-"+String(d.
 const uniq = a => [...new Set(a)];
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-/* ============ saved progress (this device) ============ */
-const KEY = "piano.v2";
-let store = { name:"", pieces:{}, current:null, practiceDone:"", speed:"slow", hand:"both", sound:null,
+/* ============ saved progress (this device), one record per player ============
+   genmusic.players = { active, list:[{ id, name, av }], device:{ settings shared by every player } }
+   Player "p1" keeps the original key "piano.v2", so progress from before players existed becomes the first player. */
+const PKEY = "genmusic.players";
+const DEVICE_KEYS = ["sound", "playOnPiano", "recWith", "pin", "fullKeys", "zoom", "zoomGame"];   // the same for everyone on this device
+const AVATARS = ["🐱","🐶","🦄","🐼","🦊","🐸","🐵","🐯","🐧","🐙","🦖","🚀","🌈","⭐","🎸","🍓"];
+const freshStore = () => ({ name:"", pieces:{}, current:null, practiceDone:"", speed:"slow", hand:"both", sound:null,
               zoom:0.9, zoomGame:0.7, fullKeys:false, playOnPiano:true, recWith:"auto", games:{},
               /* stage 2 */ days:{}, log:[], missNotes:{}, streak:{ count:0, lastDay:null, longest:0, freezes:0 },
-              stickers:{}, goalMin:15, gameNeedsPractice:true, pin:null, welcomed:"" };
-try { const raw = localStorage.getItem(KEY); if (raw) store = Object.assign(store, JSON.parse(raw)); } catch (e) {}
-function save(){ try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} }
+              stickers:{}, goalMin:15, gameNeedsPractice:true, pin:null, welcomed:"" });
+const keyFor = id => id === "p1" ? "piano.v2" : "piano.v2." + id;
+let players = null;
+try { players = JSON.parse(localStorage.getItem(PKEY)); } catch (e) {}
+if (!players || !Array.isArray(players.list) || !players.list.length) players = { active:"p1", list:[{ id:"p1", name:"", av:"🐱" }], device:null };
+if (!players.list.some(p => p.id === players.active)) players.active = players.list[0].id;
+function readStore(id){
+  const s = freshStore();
+  try { const raw = localStorage.getItem(keyFor(id)); if (raw) Object.assign(s, JSON.parse(raw)); } catch (e) {}
+  if (players.device) for (const k of DEVICE_KEYS) if (k in players.device) s[k] = players.device[k];
+  return s;
+}
+let KEY = keyFor(players.active), store = readStore(players.active);
+const player = (id = players.active) => players.list.find(p => p.id === id);
+if (!player().name && store.name) player().name = store.name;   // the old "Player name" setting names the first player
+function savePlayers(){ try { localStorage.setItem(PKEY, JSON.stringify(players)); } catch (e) {} }
+function save(){
+  players.device = players.device || {}; for (const k of DEVICE_KEYS) players.device[k] = store[k];
+  const p = player(); if (p && store.name && p.name !== store.name) p.name = store.name;
+  try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {}
+  savePlayers();
+}
+/* switch to another player in place: every screen reads `store`, so swapping it is enough */
+function switchPlayer(id){
+  if (!player(id)) return; save();
+  if (typeof stopGame === "function") stopGame();
+  players.active = id; KEY = keyFor(id); store = readStore(id);
+  if (!store.name) store.name = player(id).name;
+  if (!store.current && library.length) store.current = library[0].id;
+  save(); applyName(); updateSoundBtn(); updateGameTab();
+  if (typeof renderStreakPill === "function") renderStreakPill();
+}
+function addPlayer(name, av){
+  const id = "p" + Date.now().toString(36);
+  players.list.push({ id, name, av }); savePlayers();
+  const s = freshStore(); s.name = name; if (library.length) s.current = library[0].id;
+  try { localStorage.setItem(keyFor(id), JSON.stringify(s)); } catch (e) {}
+  return id;
+}
+function removePlayer(id){
+  if (players.list.length < 2) return false;
+  players.list = players.list.filter(p => p.id !== id);
+  try { localStorage.removeItem(keyFor(id)); } catch (e) {}
+  if (players.active === id) switchPlayer(players.list[0].id); else savePlayers();
+  return true;
+}
+function peekStore(id){ return id === players.active ? store : readStore(id); }
 function rec(id){ return store.pieces[id] || (store.pieces[id] = { plays:0, both:null, R:null, L:null }); }
 const starsFor = acc => acc >= 0.95 ? 3 : acc >= 0.8 ? 2 : 1;
 const gameOpen = () => !store.gameNeedsPractice || store.practiceDone === today();
@@ -211,6 +259,8 @@ function show(screen){
   placeSheet(screen);   // the falling-notes area belongs to the Game only (prepareGame shows it again)
   if (screen === "library") { renderLibrary(); renderRecordings(); }
   if (screen === "stickers") renderStickers();
+  if (screen === "home" && typeof renderHome === "function") renderHome();
+  document.body.classList.toggle("on-home", screen === "home");
   if (screen === "parent") renderParent();
   if (screen === "practice") openPractice();
   if (screen === "game") prepareGame();
@@ -836,7 +886,11 @@ function finishGame(){
 window.addEventListener("resize", () => { if (G && G.running) G.lanes = laneMap($("gameCanvas")); else if (ui.screen === "game" && gameOpen()) drawGame(0); if (ui.screen === "practice" && piece && piece.kind === "midi") drawRoll(); });
 
 /* ============ settings, modal, confetti, screen wake ============ */
-function applyName(){ const t = store.name ? `${store.name}'s Piano` : "Piano Practice"; $("appTitle").textContent = "🎹 " + t; document.title = t; }
+function applyName(){
+  const p = player(), nm = store.name || (p && p.name) || "";
+  document.title = nm ? `GenMusic · ${nm}` : "GenMusic";
+  const chip = $("playerChip"); if (chip) { chip.innerHTML = `<span class="av">${p ? p.av : "🎵"}</span>${esc(nm || "Player")}`; chip.title = "Switch player"; }
+}
 function modal(html){ $("modalBox").innerHTML = html; $("modal").classList.add("show"); }
 function closeModal(){ $("modal").classList.remove("show"); }
 function confetti(){

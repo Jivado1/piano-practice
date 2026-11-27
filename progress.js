@@ -171,7 +171,7 @@ $("recBtn").onclick = async () => {
     const on = ev.filter(e => e[2] === m && e[1] === 0x90).length, off = ev.filter(e => e[2] === m && e[1] === 0x80).length;
     for (let i = off; i < on; i++) ev.push([dur, 0x80, m, 0]);
   }
-  const r = { id:"rec-" + Date.now(), title:(piece ? piece.meta.title : "Free play"), when:new Date().toLocaleString(), dur, events:ev };
+  const r = { id:"rec-" + Date.now(), who:players.active, title:(piece ? piece.meta.title : "Free play"), when:new Date().toLocaleString(), dur, events:ev };
   if (snd) Object.assign(r, snd);
   const ok = await DB.put(r, "recordings");
   const st = checkStickers({ type:"rec" });
@@ -212,7 +212,7 @@ function midiFile(r){   // Standard MIDI File, format 0, 480 ticks per quarter a
 }
 function download(blob, name){ const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000); }
 async function renderRecordings(){
-  const list = (await DB.all("recordings")).sort((a, b) => b.id.localeCompare(a.id));
+  const list = (await DB.all("recordings")).filter(r => (r.who || "p1") === players.active).sort((a, b) => b.id.localeCompare(a.id));   // this player's only
   const box = $("recList");
   box.innerHTML = `<div class="grade"><h2>🎙️ My recordings</h2></div>` + (list.length ? "" : `<p class="muted">Press <b>🎙 Record</b> on the Practice screen to record yourself: the notes from the piano cable, or the sound from the microphone if the piano isn't plugged in. Recordings stay on this device.</p>`);
   for (const r of list) {
@@ -353,6 +353,5 @@ async function importProgress(f){
   applyName(); updateSoundBtn(); updKbBase(); renderStreakPill();
   await DB.open(); await loadLibrary();
   if (!store.current && library.length) store.current = library[0].id;
-  show("library"); welcomeBack();
-  if (typeof maybeFirstRunHelp === "function" && !document.getElementById("modal").classList.contains("show")) maybeFirstRunHelp();
+  show("home");   // the landing page: pick who's playing, then the Library
 })();

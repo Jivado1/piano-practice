@@ -2,17 +2,19 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="app-version" content="20261127152354" data-updated="2026-11-27T15:23:54Z">
+<meta name="app-version" content="20261127152826" data-updated="2026-11-27T15:28:26Z">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#7b5cff">
-<title>Piano Practice</title>
+<title>GenMusic</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="style.css?v=20261127152354">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="style.css?v=20261127152826">
 </head>
 <body>
 <header>
-  <h1 id="appTitle">🎹 Piano Practice</h1>
+  <h1 id="appTitle" class="brandhome" title="Home"><img src="icon.svg" alt="" class="brandimg">GenMusic</h1>
+  <button id="playerChip" class="ghost small brandhome"></button>
   <span class="tabs" id="tabs">
     <button data-screen="library" class="active">📚 Library</button>
     <button data-screen="practice">🎹 Practice</button>
@@ -87,6 +89,17 @@
   </section>
 
   <!-- STICKERS -->
+  <section class="screen" id="screen-home">
+    <div class="hero">
+      <div class="lot heroNotes" data-lot="music-notes"></div>
+      <img src="icon.svg" alt="" class="heroIcon">
+      <h1 class="logo" id="logo">GenMusic</h1>
+      <p class="tag">Play, learn and collect stars 🎶</p>
+      <div class="lot heroBuddy" data-lot="buddy"></div>
+    </div>
+    <h2 class="who">Who's playing?</h2>
+    <div class="players" id="playerList"></div>
+  </section>
   <section class="screen" id="screen-stickers"><div id="stickerBody"></div></section>
 
   <!-- PARENT -->
@@ -129,13 +142,14 @@
 <canvas id="confetti"></canvas>
 <div id="loading" class="hidden">Loading music…</div>
 
-<script src="vendor/opensheetmusicdisplay.min.js?v=20261127152354"></script>
-<script src="app.js?v=20261127152354"></script>
-<script src="progress.js?v=20261127152354"></script>
-<script src="metronome.js?v=20261127152354"></script>
-<script src="help.js?v=20261127152354"></script>
-<script src="vendor/gsap.min.js?v=20261127152354"></script>
-<script src="celebrate.js?v=20261127152354"></script>
-<script src="anims.js?v=20261127152354"></script>
+<script src="vendor/opensheetmusicdisplay.min.js?v=20261127152826"></script>
+<script src="app.js?v=20261127152826"></script>
+<script src="progress.js?v=20261127152826"></script>
+<script src="metronome.js?v=20261127152826"></script>
+<script src="help.js?v=20261127152826"></script>
+<script src="vendor/gsap.min.js?v=20261127152826"></script>
+<script src="celebrate.js?v=20261127152826"></script>
+<script src="anims.js?v=20261127152826"></script>
+<script src="home.js?v=20261127152826"></script>
 </body>
 </html>
