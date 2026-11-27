@@ -103,9 +103,16 @@ function updateSoundBtn(){ const on = store.sound !== false; $("soundBtn").textC
 let keyEls = {};
 function buildKeyboard(lo, hi){
   if (store.fullKeys) { lo = 21; hi = 108; }
-  else { lo = Math.min(lo - 2, 48); hi = Math.max(hi + 2, 84);
-    lo = lo - (((lo % 12) + 12) % 12); if (hi % 12) hi += 12 - (hi % 12);
+  else {   // only the keys this piece uses: lowest to highest note, widened to white keys, at least 8 white keys
+    if (isBlack(lo)) lo--; if (isBlack(hi)) hi++;
+    const whites = () => { let n = 0; for (let m = lo; m <= hi; m++) if (!isBlack(m)) n++; return n; };
+    for (let up = true, guard = 0; whites() < 8 && guard < 40; up = !up, guard++) {
+      if (up && hi < 108) { hi++; if (isBlack(hi)) hi++; } else if (!up && lo > 21) { lo--; if (isBlack(lo)) lo--; } }
     lo = Math.max(21, lo); hi = Math.min(108, hi); }
+  /* key numbers 1-88 beside the end keys, so the same stretch can be found on the real piano */
+  const lab = m => `<b>#${m - 20}</b><small>${NAMES[m % 12]}${Math.floor(m / 12) - 1}</small>`;
+  $("kbLo").innerHTML = lab(lo); $("kbHi").innerHTML = lab(hi);
+  $("kbLo").title = $("kbHi").title = "Piano key number, counting from the lowest key (#1) to the highest (#88)";
   keyEls = {};
   const kb = $("kb"); kb.innerHTML = "";
   const whites = []; for (let m = lo; m <= hi; m++) if (!isBlack(m)) whites.push(m);
@@ -645,8 +652,8 @@ function listenFrom(from, lead){
 
 /* ---- note roll for MIDI pieces (no sheet music in a MIDI file) ---- */
 function laneMap(canvas){
-  const c = canvas.getBoundingClientRect(), kb = $("kb").getBoundingClientRect(), L = {};
-  for (const m in keyEls) { const r = keyEls[m].getBoundingClientRect(); L[m] = { x:(r.left - kb.left) * (c.width / kb.width), w:r.width * (c.width / kb.width), black:isBlack(+m) }; }
+  const c = canvas.getBoundingClientRect(), L = {};   // lanes sit exactly above their keys (the key-number labels leave a margin each side)
+  for (const m in keyEls) { const r = keyEls[m].getBoundingClientRect(); L[m] = { x:r.left - c.left, w:r.width, black:isBlack(+m) }; }
   return L;
 }
 function fitCanvas(cv){ const dpr = window.devicePixelRatio || 1, W = cv.clientWidth, H = cv.clientHeight;
