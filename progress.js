@@ -73,7 +73,7 @@ function checkStickers(c){
   const got = []; for (const s of STICKERS) if (!store.stickers[s.id] && s.test(c || {})) { store.stickers[s.id] = today(); got.push(s); }
   if (got.length) save(); return got;
 }
-const stickersHtml = list => list && list.length ? `<p>🎉 New sticker${list.length > 1 ? "s" : ""}: <b>${list.map(s => s.e + " " + s.name).join(", ")}</b></p>` : "";
+const stickersHtml = list => list && list.length ? `<p>🎉 New sticker${list.length > 1 ? "s" : ""}: <b>${list.map(s => `<span class="newst" data-e="${s.e}">${s.e} ${s.name}</span>`).join(", ")}</b></p>` : "";
 function stickerToast(list){ cheer("New sticker: " + list.map(s => s.e + " " + s.name).join(", ")); }
 function renderStickers(){
   const n = currentStreak(), s = store.streak;

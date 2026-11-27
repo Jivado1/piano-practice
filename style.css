@@ -175,3 +175,8 @@ ol.gs li span:nth-child(2){flex:1}
 .sheetcard.mini.offgame{display:none}
 /* desktop Game: falling notes + keyboard on the left, a narrow scrolling music column on the right */
 body.game-wide #screen-game .sheetcard.mini{position:absolute;margin:0;z-index:3;box-sizing:border-box}
+
+/* celebrations (celebrate.js) */
+.popstar{display:inline-block}
+.newst{display:inline-block}
+.flyst{position:fixed;z-index:70;font-size:34px;pointer-events:none;will-change:left,top,transform}

@@ -573,7 +573,7 @@ function finishRun(){
   modal(`<h2>${whole ? "You finished" : "Section done"}!</h2>
     <p><b>${esc(piece.meta.title)}</b> — ${hname}${whole ? "" : `, bars ${$("barFrom").value}–${$("barTo").value}`}</p>
     <div class="big">${"⭐".repeat(st)}${"☆".repeat(3 - st)}</div>
-    <p><b>${Math.round(acc * 100)}%</b> of the notes and chords right first time</p>
+    <p><b data-count="${Math.round(acc * 100)}" data-suffix="%">${Math.round(acc * 100)}%</b> of the notes and chords right first time</p>
     ${!gameWas && gameOpen() ? `<p>🎮 The game is unlocked for today!</p>` : ""}
     ${trickyHtml()}${stickersHtml(newStickers)}
     <div class="row"><button class="ghost" id="mAgain">↺ Again</button><button class="ghost" id="mLib">📚 Library</button><button id="mGame">🎮 Game</button></div>`);
@@ -826,8 +826,8 @@ function finishGame(){
   stopGame(); const total = G.notes.length || 1, acc = G.hits / total, id = piece.meta.id;
   store.games[id] = Math.max(store.games[id] || 0, acc); save(); confetti();
   const newStickers = afterGame(acc, G.best);
-  modal(`<h2>Great playing!</h2><div class="big">🎮 ${G.score}</div>
-    <p>You caught <b>${G.hits}</b> of ${G.notes.length} notes (${Math.round(acc * 100)}%)</p><p>Best combo: <b>${G.best}</b></p>${stickersHtml(newStickers)}
+  modal(`<h2>Great playing!</h2><div class="big">🎮 <span data-count="${G.score}">${G.score}</span></div>
+    <p>You caught <b data-count="${G.hits}">${G.hits}</b> of ${G.notes.length} notes (${Math.round(acc * 100)}%)</p><p>Best combo: <b data-count="${G.best}">${G.best}</b></p>${stickersHtml(newStickers)}
     <div class="row"><button class="ghost" id="mLib">📚 Library</button><button id="mAgain">↺ Again</button></div>`);
   $("mAgain").onclick = () => { closeModal(); startGame(); };
   $("mLib").onclick = () => show("library");
