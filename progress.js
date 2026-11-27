@@ -73,13 +73,13 @@ function checkStickers(c){
   const got = []; for (const s of STICKERS) if (!store.stickers[s.id] && s.test(c || {})) { store.stickers[s.id] = today(); got.push(s); }
   if (got.length) save(); return got;
 }
-const stickersHtml = list => list && list.length ? `<p>🎉 New sticker${list.length > 1 ? "s" : ""}: <b>${list.map(s => `<span class="newst" data-e="${s.e}">${s.e} ${s.name}</span>`).join(", ")}</b></p>` : "";
+const stickersHtml = list => list && list.length ? `<div class="lot gift" data-lot="gift"></div><p>🎉 New sticker${list.length > 1 ? "s" : ""}: <b>${list.map(s => `<span class="newst" data-e="${s.e}">${s.e} ${s.name}</span>`).join(", ")}</b></p>` : "";
 function stickerToast(list){ cheer("New sticker: " + list.map(s => s.e + " " + s.name).join(", ")); }
 function renderStickers(){
   const n = currentStreak(), s = store.streak;
   const stars = Array.from({ length:Math.min(n, 14) }, () => "⭐").join("") + (n > 14 ? " +" + (n - 14) : "");
   $("stickerBody").innerHTML = `
-    <div class="card"><div class="big-label">🔥 Practice streak: ${n} day${n === 1 ? "" : "s"}</div>
+    <div class="card"><div class="lot buddy" data-lot="buddy"></div><div class="big-label">🔥 Practice streak: ${n} day${n === 1 ? "" : "s"}</div>
       <div class="streakstars">${stars || "Play today to start a streak!"}</div>
       <p class="muted">Longest: ${s.longest} · Freezes saved: ${"🧊".repeat(s.freezes) || "none yet"} <span class="small-print">(you earn one every 7 days — it covers a missed day)</span></p>
       <p class="muted small-print">A day counts when you practise ${store.goalMin} minutes or finish 3 pieces. Today: ${Math.round(day().sec / 60)} min, ${day().runs} finished.</p></div>
