@@ -127,33 +127,70 @@ function wireTricky(){
 }
 function clearWatch(){ watchOn = false; document.querySelectorAll(".key.watch").forEach(k => k.classList.remove("watch")); }
 
-/* ============ recorder (records everything played, chords included) ============ */
-const REC = { on:false, t0:0, events:[], timer:0 };
+/* ============ recorder ============
+   Two kinds: the notes from the piano cable (plays back on the piano, downloads as .mid), or sound from the microphone
+   (for when the cable isn't plugged in). "Record with" in the parent settings: auto = cable if the piano is connected, else the mic. */
+const REC = { on:false, t0:0, events:[], timer:0, mr:null, stream:null, chunks:[], mime:"" };
 function recNoteOff(m){ if (REC.on) REC.events.push([performance.now() - REC.t0, 0x80, m, 0]); }
+const recUsesMic = () => store.recWith === "mic" || (store.recWith !== "piano" && !midiIn);
+async function micStart(){
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) { cheer("This browser can't record from the microphone", true); return false; }
+  try {   // switch off the phone-call processing: it treats a piano as noise and squashes it
+    REC.stream = await navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:false, noiseSuppression:false, autoGainControl:false } });
+  } catch (e) { cheer("The microphone is blocked: tap the icon left of the address bar and allow the microphone", true); return false; }
+  REC.mime = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg;codecs=opus"].find(t => MediaRecorder.isTypeSupported(t)) || "";
+  REC.chunks = [];
+  REC.mr = new MediaRecorder(REC.stream, REC.mime ? { mimeType:REC.mime, audioBitsPerSecond:128000 } : {});
+  REC.mr.ondataavailable = e => { if (e.data && e.data.size) REC.chunks.push(e.data); };
+  REC.mr.start(1000); return true;
+}
+async function micStop(){
+  const mr = REC.mr; if (!mr) return null;
+  await new Promise(res => { mr.onstop = res; try { mr.stop(); } catch (e) { res(); } });
+  REC.stream.getTracks().forEach(t => t.stop());
+  const mime = mr.mimeType || REC.mime || "audio/webm", blob = new Blob(REC.chunks, { type:mime });
+  REC.mr = REC.stream = null; REC.chunks = [];
+  return { audio:await blob.arrayBuffer(), mime };
+}
 $("recBtn").onclick = async () => {
   if (!REC.on) {
+    const mic = recUsesMic();
+    if (mic && !(await micStart())) return;
     REC.on = true; REC.t0 = performance.now(); REC.events = []; $("recBtn").classList.add("recording");
-    const tick = () => { const s = Math.floor((performance.now() - REC.t0) / 1000); $("recBtn").textContent = `■ Stop ${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
-    tick(); REC.timer = setInterval(tick, 500); return;
+    const tick = () => { const s = Math.floor((performance.now() - REC.t0) / 1000); $("recBtn").textContent = `■ Stop ${mic ? "🎤 " : ""}${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
+    tick(); REC.timer = setInterval(tick, 500);
+    if (mic) cheer("🎤 Recording with the microphone: play when you're ready");
+    return;
   }
   REC.on = false; clearInterval(REC.timer); $("recBtn").classList.remove("recording"); $("recBtn").textContent = "🎙 Record";
-  const ev = REC.events.slice(); if (!ev.some(e => e[1] === 0x90)) { cheer("Nothing was played, so nothing was saved", true); return; }
-  const lastT = Math.max(...ev.map(e => e[0])), dur = Math.max(performance.now() - REC.t0, lastT + 300);
+  const dur0 = performance.now() - REC.t0, snd = await micStop(), ev = REC.events.slice();
+  if (snd && dur0 < 1500) { cheer("That was too short, so nothing was saved", true); return; }
+  if (!snd && !ev.some(e => e[1] === 0x90)) { cheer("Nothing was played, so nothing was saved", true); return; }
+  const lastT = ev.length ? Math.max(...ev.map(e => e[0])) : 0, dur = Math.max(dur0, lastT + 300);
   for (const m of new Set(ev.filter(e => e[1] === 0x90).map(e => e[2]))) {   // close any notes still held
     const on = ev.filter(e => e[2] === m && e[1] === 0x90).length, off = ev.filter(e => e[2] === m && e[1] === 0x80).length;
     for (let i = off; i < on; i++) ev.push([dur, 0x80, m, 0]);
   }
   const r = { id:"rec-" + Date.now(), title:(piece ? piece.meta.title : "Free play"), when:new Date().toLocaleString(), dur, events:ev };
+  if (snd) Object.assign(r, snd);
   const ok = await DB.put(r, "recordings");
   const st = checkStickers({ type:"rec" });
   cheer(ok ? "Saved! Find it in the Library under My recordings" : "Sorry — this browser would not save the recording", !ok);
   if (st.length) setTimeout(() => stickerToast(st), 2000);
 };
 let playTimers = [];
-function stopPlayback(){ playTimers.forEach(clearTimeout); playTimers = []; allNotesOff(); document.querySelectorAll(".recplay").forEach(b => b.textContent = "▶ Play"); }
+let playAudio = null;
+function stopPlayback(){ playTimers.forEach(clearTimeout); playTimers = [];
+  if (playAudio) { playAudio.pause(); URL.revokeObjectURL(playAudio.src); playAudio = null; }
+  allNotesOff(); document.querySelectorAll(".recplay").forEach(b => b.textContent = "▶ Play"); }
 function playRecording(r, btn){
-  if (playTimers.length) { stopPlayback(); return; }
+  if (playTimers.length || playAudio) { stopPlayback(); return; }
   btn.textContent = "■ Stop";
+  if (r.audio) {   // a microphone recording: play the sound through the tablet's speaker
+    playAudio = new Audio(URL.createObjectURL(new Blob([r.audio], { type:r.mime })));
+    playAudio.onended = stopPlayback; playAudio.play().catch(() => { stopPlayback(); cheer("Couldn't play this recording", true); });
+    return;
+  }
   const ons = {}; const notes = [];
   for (const [t, c, m, v] of r.events.slice().sort((a, b) => a[0] - b[0])) {
     if (c === 0x90) (ons[m] = ons[m] || []).push([t, v]);
@@ -177,14 +214,16 @@ function download(blob, name){ const a = document.createElement("a"); a.href = U
 async function renderRecordings(){
   const list = (await DB.all("recordings")).sort((a, b) => b.id.localeCompare(a.id));
   const box = $("recList");
-  box.innerHTML = `<div class="grade"><h2>🎙️ My recordings</h2></div>` + (list.length ? "" : `<p class="muted">Press <b>🎙 Record</b> on the Practice screen to record yourself. Recordings stay on this device.</p>`);
+  box.innerHTML = `<div class="grade"><h2>🎙️ My recordings</h2></div>` + (list.length ? "" : `<p class="muted">Press <b>🎙 Record</b> on the Practice screen to record yourself: the notes from the piano cable, or the sound from the microphone if the piano isn't plugged in. Recordings stay on this device.</p>`);
   for (const r of list) {
     const row = document.createElement("div"); row.className = "card row recrow";
-    const s = Math.round(r.dur / 1000);
-    row.innerHTML = `<div><b>${esc(r.title)}</b><div class="muted small-print">${esc(r.when)} · ${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")} · ${r.events.filter(e => e[1] === 0x90).length} notes</div></div><span class="spacer"></span>
-      <button class="small recplay">▶ Play</button><button class="ghost small recdl">⬇ .mid</button><button class="ghost small recdel">✕</button>`;
+    const s = Math.round(r.dur / 1000), notes = (r.events || []).filter(e => e[1] === 0x90).length;
+    const what = r.audio ? `🎤 microphone · ${r.audio.byteLength < 1048576 ? Math.max(1, Math.round(r.audio.byteLength / 1024)) + " KB" : (r.audio.byteLength / 1048576).toFixed(1) + " MB"}` : `🎹 ${notes} notes`;
+    const ext = r.audio ? (/mp4/.test(r.mime) ? "m4a" : /ogg/.test(r.mime) ? "ogg" : "webm") : "mid";
+    row.innerHTML = `<div><b>${esc(r.title)}</b><div class="muted small-print">${esc(r.when)} · ${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")} · ${what}</div></div><span class="spacer"></span>
+      <button class="small recplay">▶ Play</button><button class="ghost small recdl">⬇ .${ext}</button><button class="ghost small recdel">✕</button>`;
     row.querySelector(".recplay").onclick = e => playRecording(r, e.target);
-    row.querySelector(".recdl").onclick = () => download(midiFile(r), `${r.title.replace(/[^\w\- ]+/g, "")} ${r.id.slice(4)}.mid`);
+    row.querySelector(".recdl").onclick = () => download(r.audio ? new Blob([r.audio], { type:r.mime }) : midiFile(r), `${r.title.replace(/[^\w\- ]+/g, "")} ${r.id.slice(4)}.${ext}`);
     row.querySelector(".recdel").onclick = async () => { if (confirm("Delete this recording?")) { await DB.del(r.id, "recordings"); renderRecordings(); } };
     box.appendChild(row);
   }
@@ -262,6 +301,7 @@ function renderParent(){
       <label>Laptop/tablet sound <select id="sSound"><option value="auto" ${store.sound === null ? "selected" : ""}>auto (off when the piano is connected)</option><option value="on" ${store.sound === true ? "selected" : ""}>on</option><option value="off" ${store.sound === false ? "selected" : ""}>off</option></select></label>
       <label><input type="checkbox" id="sFull" ${store.fullKeys ? "checked" : ""}> Show all 88 keys</label>
       <label><input type="checkbox" id="sOut" ${store.playOnPiano ? "checked" : ""}> Listen and recordings play on the real piano</label>
+      <label>Record with <select id="sRec"><option value="auto" ${store.recWith === "auto" ? "selected" : ""}>auto (piano cable if connected, else microphone)</option><option value="piano" ${store.recWith === "piano" ? "selected" : ""}>piano cable only</option><option value="mic" ${store.recWith === "mic" ? "selected" : ""}>microphone</option></select></label>
       <label>New parent code <input type="password" inputmode="numeric" maxlength="4" id="sPin" placeholder="leave empty to keep"></label>
     </div>
     <div class="row"><button id="sSave">Save settings</button><span id="sMsg" class="muted"></span></div></div>
@@ -273,7 +313,7 @@ function renderParent(){
   $("sSave").onclick = () => {
     store.name = $("sName").value.trim(); store.goalMin = Math.min(120, Math.max(1, +$("sGoal").value || 15));
     store.gameNeedsPractice = $("sGameLock").checked; store.speed = $("sSpeed").value;
-    store.sound = { auto:null, on:true, off:false }[$("sSound").value]; store.fullKeys = $("sFull").checked; store.playOnPiano = $("sOut").checked;
+    store.sound = { auto:null, on:true, off:false }[$("sSound").value]; store.fullKeys = $("sFull").checked; store.playOnPiano = $("sOut").checked; store.recWith = $("sRec").value;
     const p = $("sPin").value; if (p && !/^\d{4}$/.test(p)) { $("sMsg").textContent = "The code must be 4 digits."; return; } if (p) store.pin = p;
     save(); applyName(); updateSoundBtn(); updateGameTab(); renderStreakPill(); $("sMsg").textContent = "Saved ✓";
   };
@@ -293,7 +333,7 @@ function b64(buf){ const u = new Uint8Array(buf); let s = ""; for (let i = 0; i 
 function unb64(s){ const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u.buffer; }
 async function exportProgress(){
   const pieces = (await DB.all("pieces")).map(p => p.data instanceof ArrayBuffer ? Object.assign({}, p, { data:{ b64:b64(p.data) } }) : p);
-  const recordings = await DB.all("recordings");
+  const recordings = (await DB.all("recordings")).map(r => r.audio instanceof ArrayBuffer ? Object.assign({}, r, { audio:{ b64:b64(r.audio) } }) : r);
   const blob = new Blob([JSON.stringify({ app:"piano-practice", v:2, exported:new Date().toISOString(), store, pieces, recordings })], { type:"application/json" });
   download(blob, `piano-progress-${today()}.json`);
 }
@@ -303,7 +343,7 @@ async function importProgress(f){
   if (!confirm(`Replace the progress on this device with the file exported ${String(d.exported || "").slice(0, 10)}?`)) return;
   store = Object.assign({}, store, d.store); save();
   for (const p of d.pieces || []) await DB.put(p.data && p.data.b64 ? Object.assign({}, p, { data:unb64(p.data.b64) }) : p, "pieces");
-  for (const r of d.recordings || []) await DB.put(r, "recordings");
+  for (const r of d.recordings || []) await DB.put(r.audio && r.audio.b64 ? Object.assign({}, r, { audio:unb64(r.audio.b64) }) : r, "recordings");
   await loadLibrary(); applyName(); updateSoundBtn(); updateGameTab(); renderStreakPill(); renderParent();
   alert("Progress imported ✓");
 }

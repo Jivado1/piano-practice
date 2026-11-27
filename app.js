@@ -14,7 +14,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 /* ============ saved progress (this device) ============ */
 const KEY = "piano.v2";
 let store = { name:"", pieces:{}, current:null, practiceDone:"", speed:"slow", hand:"both", sound:null,
-              zoom:0.9, zoomGame:0.7, fullKeys:false, playOnPiano:true, games:{},
+              zoom:0.9, zoomGame:0.7, fullKeys:false, playOnPiano:true, recWith:"auto", games:{},
               /* stage 2 */ days:{}, log:[], missNotes:{}, streak:{ count:0, lastDay:null, longest:0, freezes:0 },
               stickers:{}, goalMin:15, gameNeedsPractice:true, pin:null, welcomed:"" };
 try { const raw = localStorage.getItem(KEY); if (raw) store = Object.assign(store, JSON.parse(raw)); } catch (e) {}
