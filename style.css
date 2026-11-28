@@ -226,3 +226,10 @@ body.on-home #playerChip{display:none}
 .avpick button.on{background:var(--purple);box-shadow:0 0 0 3px #d9ceff}
 @media (max-width:700px){ .heroBuddy{width:84px;height:76px} .heroIcon{width:72px;height:72px} }
 #bgmBtn.off{opacity:.5}
+/* combo characters (chars.js) */
+#charPop{position:fixed;z-index:45;pointer-events:none}
+#charPop .who{width:100%;aspect-ratio:1}
+#charPop .bubble{position:absolute;top:-34px;white-space:nowrap;background:#fff;color:var(--purple);font-weight:900;font-size:18px;
+  padding:6px 12px;border-radius:16px;border:3px solid var(--purple);box-shadow:0 4px 0 rgba(0,0,0,.12)}
+#charPop.left .bubble{left:20%}
+#charPop.right .bubble{right:20%}

@@ -21,6 +21,7 @@
   }));
   const cache = {};
   const data = n => cache[n] || (cache[n] = fetch(`lottie/${n}.json${ver}`).then(r => { if (!r.ok) throw new Error(n); return r.json(); }).catch(e => { delete cache[n]; throw e; }));
+  window.lottieLib = lib; window.lottieJson = data;   // shared with chars.js
   const live = new Set();
   const shown = el => { if (!el.isConnected || !el.getClientRects().length) return false;   // inside a hidden screen, or still faded out
     const step = el.closest("#modalBox > *"); return !step || +getComputedStyle(step).opacity > 0.3; };

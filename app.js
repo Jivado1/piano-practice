@@ -249,7 +249,7 @@ function noteOff(m){ const el = keyEls[m]; if (el) el.classList.remove("down"); 
 /* ============ screens ============ */
 const ui = { screen:"library" };
 function show(screen){
-  stopListen(); if (screen !== "game") stopGame();
+  stopListen(); if (screen !== "game") stopGame(); if (window.charHide) charHide();
   if (screen !== "practice" && typeof metroStop === "function") { metroStop(); $("metroPanel").classList.add("hidden"); }
   document.querySelectorAll("#tabs button[data-screen]").forEach(b => b.classList.toggle("active", b.dataset.screen === screen));
   document.querySelectorAll(".screen").forEach(s => s.classList.toggle("active", s.id === "screen-" + screen));
@@ -597,11 +597,13 @@ function practiceNote(m){
     PR.got.add(m); flash(m, "ok");
     if (PR.got.size >= exp.length) {
       PR.total++; if (!PR.wrong) PR.clean++;
+      PR.streak = PR.wrong ? 0 : (PR.streak || 0) + 1;                 // a run of notes/chords right first time
+      if (!PR.wrong && window.charCombo) charCombo("practice", PR.streak);
       if (Math.random() < 0.12) cheer(CHEERS[Math.floor(Math.random() * CHEERS.length)]);
       goStep(nextPlayable(PR.idx + 1));
     } else drawStep();
   } else {
-    flash(m, "bad"); PR.wrong = true; PR.missed[PR.idx] = (PR.missed[PR.idx] || 0) + 1;
+    flash(m, "bad"); PR.wrong = true; PR.streak = 0; PR.missed[PR.idx] = (PR.missed[PR.idx] || 0) + 1;
     trackMiss(exp.filter(x => !PR.got.has(x)));
     cheer(SOFT[Math.floor(Math.random() * SOFT.length)], true);
   }
@@ -769,7 +771,7 @@ function gameNote(m){
     const V = 100 + 10 * Math.min(G.combo, 20);
     if (best.len >= HOLD_MIN) { best.holding = true; best.pool = Math.round(V / 2); best.got = 0; G.score += V - best.pool; }   // long note: hold it for the rest
     else G.score += V;
-    hitBurst(m, best.hand);
+    hitBurst(m, best.hand); if (window.charCombo) charCombo("game", G.combo);
     flash(m, "ok"); hud(G.combo >= 10 && G.combo % 10 === 0 ? `${G.combo} in a row!` : ""); }
   else flash(m, "bad");
 }
