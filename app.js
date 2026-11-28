@@ -15,10 +15,10 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
    genmusic.players = { active, list:[{ id, name, av }], device:{ settings shared by every player } }
    Player "p1" keeps the original key "piano.v2", so progress from before players existed becomes the first player. */
 const PKEY = "genmusic.players";
-const DEVICE_KEYS = ["sound", "playOnPiano", "recWith", "pin", "fullKeys", "zoom", "zoomGame"];   // the same for everyone on this device
+const DEVICE_KEYS = ["sound", "playOnPiano", "recWith", "pin", "fullKeys", "zoom", "zoomGame", "bgm"];   // the same for everyone on this device
 const AVATARS = ["🐱","🐶","🦄","🐼","🦊","🐸","🐵","🐯","🐧","🐙","🦖","🚀","🌈","⭐","🎸","🍓"];
 const freshStore = () => ({ name:"", pieces:{}, current:null, practiceDone:"", speed:"slow", hand:"both", sound:null,
-              zoom:0.9, zoomGame:0.7, fullKeys:false, playOnPiano:true, recWith:"auto", games:{},
+              zoom:0.9, zoomGame:0.7, fullKeys:false, playOnPiano:true, recWith:"auto", bgm:true, games:{},
               /* stage 2 */ days:{}, log:[], missNotes:{}, streak:{ count:0, lastDay:null, longest:0, freezes:0 },
               stickers:{}, goalMin:15, gameNeedsPractice:true, pin:null, welcomed:"" });
 const keyFor = id => id === "p1" ? "piano.v2" : "piano.v2." + id;

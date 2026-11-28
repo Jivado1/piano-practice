@@ -225,3 +225,4 @@ body.on-home #playerChip{display:none}
 .avpick button{font-size:26px;padding:6px 8px;border-radius:12px}
 .avpick button.on{background:var(--purple);box-shadow:0 0 0 3px #d9ceff}
 @media (max-width:700px){ .heroBuddy{width:84px;height:76px} .heroIcon{width:72px;height:72px} }
+#bgmBtn.off{opacity:.5}
