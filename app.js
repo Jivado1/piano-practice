@@ -493,7 +493,7 @@ function stepsFromMidi(mf){
 }
 
 /* ============ practice (wait mode) ============ */
-function cheer(text, soft){ for (const id of ["cheer","cheer2"]) { $(id).textContent = text || ""; $(id).className = soft ? "soft" : ""; }
+function cheer(text, soft){ for (const id of ["cheer","cheer2"]) { const el = $(id); el.textContent = ""; if (text) { const s = document.createElement("span"); s.textContent = text; el.appendChild(s); } el.className = soft ? "soft" : ""; }
   clearTimeout(cheer._t); if (text) cheer._t = setTimeout(() => cheer(""), soft ? 2500 : 1800); }
 let PR = null, cursorIdx = 0;
 const CHEERS = ["Nice!","Great!","Yes!","Lovely!","Super!","Well done!"];

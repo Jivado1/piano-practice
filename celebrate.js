@@ -60,7 +60,7 @@
   const plainCheer = window.cheer;
   window.cheer = (text, soft) => {
     plainCheer(text, soft);
-    if (text) for (const id of ["cheer", "cheer2"]) { const el = $(id); if (el && el.offsetParent) G.fromTo(el, { scale:0.6 }, { scale:1, duration:0.35, ease:"back.out(2.5)", overwrite:true }); }
+    if (text) for (const id of ["cheer", "cheer2"]) { const el = $(id), sp = el && el.firstElementChild; if (sp && el.offsetParent) G.fromTo(sp, { scale:0.6 }, { scale:1, duration:0.35, ease:"back.out(2.5)", overwrite:true }); }
   };
 
   /* --- library cards and stickers ripple in when their screen opens --- */
