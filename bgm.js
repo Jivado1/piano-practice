@@ -64,9 +64,9 @@
     if (playing) return; playing = true;
     try { await loadPiano(); } catch (e) {}
     if (!playing) return;
-    const ctx = audio(); try { await ctx.resume(); } catch (e) {}
-    if (!playing) return;
-    if (ctx.state !== "running") { playing = false; return; }   // no tap yet: try again on the first one
+    const ctx = audio();
+    if (ctx.state !== "running") { playing = false; return; }   // sound not allowed yet (no tap since the page opened): the first tap starts it
+    if (!playing) return;   // no tap yet: try again on the first one
     setup(); bus.gain.cancelScheduledValues(ctx.currentTime); bus.gain.setTargetAtTime(VOL, ctx.currentTime, 0.6);
     nextBar -= nextBar % 4;                    // carry on from the start of the phrase we were in
     barT = 0; tick(); clearInterval(timer); timer = setInterval(tick, 250);
@@ -76,7 +76,9 @@
     const ctx = audio(); bus && bus.gain.setTargetAtTime(0.0001, ctx.currentTime, fast ? 0.08 : 0.35);
     clearInterval(timer); timer = 0;           // notes already queued fade out under the falling volume
   }
-  function sync(){ wanted() ? start() : stop(!ON_SCREENS.has(screen)); updBtn(); }
+  function sync(){ wanted() ? start() : stop(!ON_SCREENS.has(screen)); updBtn();
+    let locked = false; try { locked = wanted() && audio().state !== "running"; } catch (e) {}
+    document.body.classList.toggle("sound-locked", locked); }
   function updBtn(){
     const b = $("bgmBtn"); if (!b) return;
     const on = store.bgm !== false; b.textContent = on ? "🎶" : "🎵"; b.classList.toggle("off", !on);
@@ -94,7 +96,10 @@
   const plainSound = $("soundBtn").onclick;
   $("soundBtn").onclick = e => { plainSound(e); sync(); };
   document.addEventListener("visibilitychange", sync);
-  for (const ev of ["pointerdown", "keydown"]) document.addEventListener(ev, () => { if (!playing && wanted()) setTimeout(sync, 0); }, { capture:true });
+  /* the first touch: unlock sound right inside the tap (browsers require that), then start */
+  const unlock = () => { if (playing || !wanted()) return; try { audio().resume().then(sync, () => {}); } catch (e) {} };
+  for (const ev of ["pointerdown", "touchstart", "keydown", "click"]) document.addEventListener(ev, unlock, { capture:true });
+  try { audio().addEventListener("statechange", () => { if (audio().state === "running") sync(); }); } catch (e) {}
   window.bgmSync = sync; window.bgmState = () => ({ playing, ducked, screen, bar:nextBar, gain:bus ? +bus.gain.value.toFixed(3) : 0 });
   updBtn();
 })();

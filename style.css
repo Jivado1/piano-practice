@@ -236,3 +236,6 @@ body.on-home #playerChip{display:none}
   padding:6px 12px;border-radius:16px;border:3px solid var(--purple);box-shadow:0 4px 0 rgba(0,0,0,.12)}
 #charPop.left .bubble{left:20%}
 #charPop.right .bubble{right:20%}
+.taphint{display:none;position:relative;z-index:1;margin:8px auto 0;width:max-content;background:#fff;color:var(--purple);font-weight:800;font-size:15px;padding:4px 12px;border-radius:14px;animation:taphint 1.6s ease-in-out infinite}
+body.sound-locked .taphint{display:block}
+@keyframes taphint{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
