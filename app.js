@@ -244,7 +244,7 @@ function noteOn(m, src, vel = 80){
   if (ui.screen === "practice") practiceNote(m);
   else if (ui.screen === "game") gameNote(m);
 }
-function noteOff(m){ const el = keyEls[m]; if (el) el.classList.remove("down"); pianoUp(m); recNoteOff(m); }
+function noteOff(m){ const el = keyEls[m]; if (el) el.classList.remove("down"); pianoUp(m); recNoteOff(m); if (ui.screen === "game") gameRelease(m); }
 
 /* ============ screens ============ */
 const ui = { screen:"library" };
@@ -765,10 +765,33 @@ function stopGame(){ cancelAnimationFrame(raf); if (G && G.running) { G.running 
 function gameNote(m){
   if (!G || !G.running) return; const now = performance.now() / 1000;
   let best = null; for (const n of G.notes) { if (n.hit || n.miss || n.midi !== m) continue; const d = Math.abs(n.t - now); if (d <= 0.25 && (!best || d < Math.abs(best.t - now))) best = n; }
-  if (best) { best.hit = true; G.hits++; G.combo++; G.best = Math.max(G.best, G.combo); G.score += 100 + 10 * Math.min(G.combo, 20);
+  if (best) { best.hit = true; best.pressT = now; G.hits++; G.combo++; G.best = Math.max(G.best, G.combo);
+    const V = 100 + 10 * Math.min(G.combo, 20);
+    if (best.len >= HOLD_MIN) { best.holding = true; best.pool = Math.round(V / 2); best.got = 0; G.score += V - best.pool; }   // long note: hold it for the rest
+    else G.score += V;
     hitBurst(m, best.hand);
     flash(m, "ok"); hud(G.combo >= 10 && G.combo % 10 === 0 ? `${G.combo} in a row!` : ""); }
   else flash(m, "bad");
+}
+/* ---- long notes: the bar keeps rolling down and flashes while the right key is held; points fill up as it's held ---- */
+const HOLD_MIN = 0.5, HOLD_SLACK = 0.12;   // notes this long (seconds) must be held; letting go this close to the end still counts as a full hold
+const holdEnd = n => n.t + n.len - HOLD_SLACK;
+function holdProgress(n, now){   // add the points earned since the last frame
+  const span = Math.max(0.05, holdEnd(n) - n.pressT), f = Math.max(0, Math.min(1, (now - n.pressT) / span));
+  const want = Math.round(n.pool * f); if (want > n.got) { G.score += want - n.got; n.got = want; }
+  return f;
+}
+function gameRelease(m){
+  if (!G || !G.running) return; const now = performance.now() / 1000;
+  for (const n of G.notes) if (n.holding && n.midi === m) {
+    const f = holdProgress(n, now); n.holding = false;
+    if (f >= 1) holdDone(n); else { n.letGo = now; hud(f < 0.5 ? "Hold long notes!" : ""); }
+    $("hudScore").textContent = G.score;
+  }
+}
+function holdDone(n){ n.holding = false; n.held = true; G.score += n.pool - n.got; n.got = n.pool; G.score += 20;   // +20 for a full hold
+  const l = G.lanes && G.lanes[n.midi]; if (l) (G.fx = G.fx || []).push({ x:l.x + l.w / 2, w:l.w, t0:performance.now() / 1000, col:[255, 230, 90], sparks:Array.from({ length:12 }, () => ({ a:-Math.PI / 2 + (Math.random() - .5) * 2, v:140 + Math.random() * 200, r:2 + Math.random() * 2.5 })) });
+  $("hudScore").textContent = G.score;
 }
 /* ---- hit effects: a flash of light where the bar meets the yellow line, a beam up the lane and a spray of sparks ---- */
 /* combo levels, like a dance game: every 5 in a row "unlocks" a new colour. Level 6+ is a rainbow. */
@@ -845,6 +868,9 @@ function loop(){
   const now = performance.now() / 1000;
   for (const n of G.notes) if (!n.hit && !n.miss && now > n.t + 0.25) { n.miss = true; G.combo = 0; hud(""); }
   for (const n of G.auto) if (!n.hit && now >= n.t) { n.hit = true; playNote(n.midi, n.len, 55); }
+  let filled = false;
+  for (const n of G.notes) if (n.holding) { if (holdProgress(n, now) >= 1) holdDone(n); filled = true; }
+  if (filled) $("hudScore").textContent = G.score;
   if (G.msgT && performance.now() - G.msgT > 1200) { $("hudMsg").textContent = ""; G.msgT = 0; }
   const soon = new Map(); for (const n of G.notes) if (!n.hit && !n.miss && n.t - now < 0.5 && n.t - now > -0.25) soon.set(n.midi, n.hand);
   showTargets(soon);
@@ -866,7 +892,19 @@ function drawGame(now){
   for (const list of [G.auto, G.notes]) for (const n of list) {
     const l = L[n.midi]; if (!l) continue;
     const yb = hitY - (n.t - now) * pps, h = Math.max(16, n.len * pps - 4), yt = yb - h; if (yt > H || yb < -10) continue;
-    if (list === G.notes && n.hit) { if (now - n.t < 0.25) { ctx.fillStyle = "rgba(47,179,107,.85)"; ctx.fillRect(l.x, hitY - 22, l.w, 22); } continue; }
+    if (list === G.notes && n.hit) {
+      if (yt >= hitY) continue;                                 // it has rolled all the way into the line
+      ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, hitY); ctx.clip();
+      const base = n.hand === "R" ? [95, 176, 255] : [199, 125, 255];
+      if (n.holding || (n.held && n.len >= HOLD_MIN) || n.len < HOLD_MIN) {   // flashing: pulses between bright white and the hand colour
+        const p = 0.5 + 0.5 * Math.sin(now * 22), mix = c => Math.round(c + (255 - c) * (0.35 + 0.5 * p));
+        ctx.shadowColor = `rgb(${base.join(",")})`; ctx.shadowBlur = 14 + 12 * p;
+        ctx.fillStyle = `rgb(${mix(base[0])},${mix(base[1])},${mix(base[2])})`;
+      } else ctx.fillStyle = "rgba(170,160,190,.45)";           // let go too early: the rest of the bar goes grey
+      roundRect(ctx, l.x + 2, yt, l.w - 4, h, 6); ctx.restore();
+      if (n.holding) { ctx.fillStyle = `rgba(255,255,255,${0.5 + 0.4 * Math.sin(now * 30)})`; ctx.fillRect(l.x + 2, hitY - 5, l.w - 4, 8); }   // glow where it meets the line
+      continue;
+    }
     ctx.fillStyle = list === G.auto ? "rgba(200,190,220,.22)" : n.miss ? "rgba(160,150,180,.35)" : n.hand === "R" ? "#5fb0ff" : "#c77dff";
     roundRect(ctx, l.x + 2, yt, l.w - 4, h, 6);
   }
